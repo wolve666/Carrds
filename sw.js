@@ -1,5 +1,5 @@
-// Cambia questo numero a ogni aggiornamento dei file per forzare il rinnovo della cache
-const VERSION = 'carrds-v2';
+// La versione arriva da index.html (sw.js?v=...): non serve toccare questo file
+const VERSION = 'carrds-' + (new URL(self.location).searchParams.get('v') || '0');
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 const LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js',
@@ -10,7 +10,8 @@ const LIBS = [
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
     const c = await caches.open(VERSION);
-    await c.addAll(CORE);
+    // ogni file viene salvato da solo: se uno manca, l'installazione non si blocca
+    await Promise.all(CORE.map(u => c.add(new Request(u, {cache: 'reload'})).catch(() => {})));
     await Promise.all(LIBS.map(u => c.add(new Request(u, {mode: 'cors'})).catch(() => {})));
     await self.skipWaiting();
   })());
