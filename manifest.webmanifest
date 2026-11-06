@@ -2,7 +2,7 @@
   "name": "Carrds",
   "short_name": "Carrds",
   "description": "Le tessere fedeltà dei negozi, pronte alla cassa.",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "lang": "it",

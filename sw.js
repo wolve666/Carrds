@@ -40,6 +40,9 @@ self.addEventListener('fetch', e => {
     return;
   }
 
+  // Ricerche dei loghi: sempre dalla rete, non si salvano
+  if (url.pathname.endsWith('/api.php')) return;
+
   // Librerie, font e loghi: prima la cache, poi la rete (poi restano disponibili offline)
   e.respondWith((async () => {
     const own = await caches.match(req);

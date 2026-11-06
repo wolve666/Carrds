@@ -81,12 +81,18 @@ h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;margin:0;flex:1;line-h
   letter-spacing:-.01em;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card .tail{position:absolute;top:.55rem;right:.7rem;font-size:.75rem;opacity:.8;font-variant-numeric:tabular-nums}
 .card::after{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.28)}
-.logo{position:absolute;top:.6rem;left:.6rem;width:2.7rem;height:2.7rem;border-radius:11px;background:#fff;
-  display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.18);overflow:hidden}
-.logo img{width:78%;height:78%;object-fit:contain}
-.bigcard .logo{width:4.4rem;height:4.4rem;top:1rem;left:1rem;border-radius:16px}
-.thumb{position:relative}
-.thumb .logo{width:2rem;height:2rem;top:.35rem;left:.35rem;border-radius:8px}
+.flogo{position:absolute;left:9%;top:9%;width:82%;height:82%;object-fit:contain;display:block}
+.cover .flogo{left:0;top:0;width:100%;height:100%;object-fit:cover}
+.haslogo .name,.haslogo .tail,.bigcard.haslogo span{display:none}
+.thumb{position:relative;overflow:hidden}
+.lsearch{display:flex;gap:.6rem;margin-top:.6rem}
+.lsearch input{flex:1}
+.lsearch .btn{flex:none}
+.lgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin-top:1rem}
+.ltile{aspect-ratio:1.586;border-radius:12px;border:1.5px solid var(--red-soft);background:#fff;position:relative;padding:0;overflow:hidden}
+.ltile img{position:absolute;left:10%;top:10%;width:80%;height:72%;object-fit:contain}
+.ltile span{position:absolute;left:0;right:0;bottom:0;font-size:.7rem;color:#7A5A5F;background:rgba(255,255,255,.85);padding:.1rem 0}
+.ltile:active{transform:scale(.97)}
 .card.photo .name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 .card.photo::before{content:"";position:absolute;inset:auto 0 0 0;height:55%;background:linear-gradient(transparent,rgba(0,0,0,.6))}
 .card.photo .tail{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
@@ -134,7 +140,7 @@ input[type=text],select,textarea{width:100%;padding:.85rem;border-radius:14px;bo
 input[type=text]:focus,select:focus,textarea:focus{border-color:var(--red);outline:none;box-shadow:0 0 14px var(--halo)}
 textarea{min-height:8rem;font-size:.85rem;resize:vertical}
 .swatches{display:flex;flex-wrap:wrap;gap:.6rem}
-.sw{width:2.4rem;height:2.4rem;border-radius:50%;border:0;background:var(--c)}
+.sw{width:2.4rem;height:2.4rem;border-radius:50%;border:1.5px solid var(--red-soft);background:var(--c)}
 .sw[aria-pressed="true"]{outline:3px solid var(--red);outline-offset:3px}
 .face{display:flex;gap:.8rem;align-items:center}
 .thumb{width:7rem;aspect-ratio:1.586;border-radius:10px;background:var(--c) center/cover;flex:none;border:1.5px solid var(--red-soft)}
@@ -246,11 +252,20 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
     <div class="face">
       <div class="thumb" id="f-thumb"></div>
       <div class="row">
+        <button class="btn primary" id="f-logo">Cerca logo</button>
         <button class="btn" id="f-face">Fotografa il fronte</button>
-        <button class="btn quiet" id="f-noface" hidden>Togli la foto</button>
       </div>
     </div>
-    <p class="hint">Senza foto la tessera mostra il logo del sito sul colore scelto qui sotto.</p>
+    <div class="row" style="margin-top:.7rem">
+      <button class="btn quiet" id="f-nologo" hidden>Togli logo</button>
+      <button class="btn quiet" id="f-noface" hidden>Togli la foto</button>
+    </div>
+    <label for="f-fit" id="f-fit-l" hidden>Come mostrare il logo</label>
+    <select id="f-fit" hidden>
+      <option value="contain">Logo intero sulla tessera</option>
+      <option value="cover">Riempi tutta la tessera</option>
+    </select>
+    <span class="lbl">Colore di sfondo</span>
     <div class="swatches" id="f-colors" style="margin-top:.7rem"></div>
     <div class="codebox" id="f-prev"></div>
     <div class="row"><button class="btn primary" id="f-save">Salva tessera</button></div>
@@ -263,6 +278,18 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
     <div class="viewfinder"><video id="video" playsinline muted></video></div>
     <p id="scan-msg">Inquadra il codice a barre della tessera dentro il riquadro.</p>
     <button class="btn wide" id="scan-stop">Annulla</button>
+  </div>
+</section>
+
+<section class="sheet" id="logos" hidden aria-label="Cerca logo">
+  <div class="inner">
+    <div class="top"><h2>Cerca logo</h2><button class="x" id="l-back" aria-label="Torna alla tessera">×</button></div>
+    <div class="lsearch">
+      <input type="text" id="l-q" placeholder="Nome del negozio" autocomplete="off" enterkeyhint="search">
+      <button class="btn primary" id="l-go">Cerca</button>
+    </div>
+    <p class="hint" id="l-status"></p>
+    <div class="lgrid" id="l-grid"></div>
   </div>
 </section>
 
@@ -287,12 +314,13 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
 
 <script>
 const KEY = 'tessere.v1';
-const COLORS = ['#D7263D','#8E1B2B','#F26B1D','#F2C230','#2E9E5B','#13878F','#1D4ED8','#6D3FC8','#C2337A','#3A3F4B'];
+const COLORS = ['#FFFFFF','#D7263D','#8E1B2B','#F26B1D','#F2C230','#2E9E5B','#13878F','#1D4ED8','#6D3FC8','#C2337A','#3A3F4B'];
 const $ = s => document.querySelector(s);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let cards = load();
 let siteAuto = true;
-let current = null, editing = null, wakeLock = null, color = COLORS[0], faceImg = null, delArmed = false;
+let formLogo = null, formFit = 'contain';
+let current = null, editing = null, wakeLock = null, color = COLORS[1], faceImg = null, delArmed = false;
 
 function load(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : []; }catch(e){ return []; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(cards)); return true; }catch(e){ toast('Spazio pieno: togli qualche foto delle tessere'); return false; } }
@@ -323,12 +351,15 @@ function guessSite(name){
   return '';
 }
 function cleanSite(v){ return v.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split(/[\/?#]/)[0]; }
-function logoTag(c){
-  if(c.img || !c.site) return '';
-  const d = encodeURIComponent(c.site);
-  return '<span class="logo"><img src="https://www.google.com/s2/favicons?domain='+d+'&sz=128" data-alt="https://icons.duckduckgo.com/ip3/'+d+'.ico" alt="" onerror="logoFail(this)"></span>';
+function logoSrc(c){
+  if(c.img) return '';
+  if(c.logo) return c.logo;
+  if(c.site) return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(c.site) + '&sz=256';
+  return '';
 }
-window.logoFail = img => { if(img.dataset.alt){ img.src = img.dataset.alt; img.dataset.alt = ''; } else if(img.parentNode) img.parentNode.remove(); };
+function faceTag(c){ const s = logoSrc(c); return s ? '<img class="flogo" src="'+esc(s)+'" alt="" onerror="logoFail(this)">' : ''; }
+function faceClass(c){ return c.img ? ' photo' : (logoSrc(c) ? ' haslogo' + (c.fit === 'cover' ? ' cover' : '') : ''); }
+window.logoFail = img => { const p = img.parentNode; img.remove(); if(p) p.classList.remove('haslogo','cover'); };
 let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),2200); }
 
 /* ---------- tema ---------- */
@@ -355,8 +386,8 @@ function render(){
     .sort((a,b) => (b.uses||0) - (a.uses||0) || a.name.localeCompare(b.name,'it'));
   if(!list.length){ w.innerHTML = '<p class="empty">Nessuna tessera con “' + esc(q) + '”.</p>'; return; }
   w.innerHTML = list.map(c =>
-    '<button class="card'+(c.img?' photo':'')+'" data-id="'+c.id+'" aria-label="'+esc(c.name)+'" style="'+cardStyle(c)+'">' +
-    logoTag(c) + '<span class="tail">•••• '+esc(c.number.slice(-4))+'</span><span class="name">'+esc(c.name)+'</span></button>').join('');
+    '<button class="card'+faceClass(c)+'" data-id="'+c.id+'" aria-label="'+esc(c.name)+'" style="'+cardStyle(c)+'">' +
+    faceTag(c) + '<span class="tail">•••• '+esc(c.number.slice(-4))+'</span><span class="name">'+esc(c.name)+'</span></button>').join('');
 }
 
 /* animazione di apertura: le tessere si impilano una sopra l'altra, poi si dispongono in griglia */
@@ -444,9 +475,9 @@ function openCard(id){
   current = c; c.uses = (c.uses||0) + 1; save();
   const head = $('#d-card');
   head.setAttribute('style', cardStyle(c));
-  head.classList.toggle('photo', !!c.img);
-  head.querySelectorAll('.logo').forEach(x => x.remove());
-  head.insertAdjacentHTML('afterbegin', logoTag(c));
+  head.className = 'bigcard' + faceClass(c);
+  head.querySelectorAll('.flogo').forEach(x => x.remove());
+  head.insertAdjacentHTML('afterbegin', faceTag(c));
   $('#d-name').textContent = c.name;
   drawCode($('#d-code'), c.number, c.format);
   $('#d-box').classList.toggle('qr', c.format === 'QR');
@@ -465,7 +496,13 @@ function paintThumb(){
   const t = $('#f-thumb');
   t.style.setProperty('--c', color);
   t.style.backgroundImage = faceImg ? 'url('+faceImg+')' : 'none';
-  t.innerHTML = logoTag({img:faceImg, site:cleanSite($('#f-site').value)});
+  const f = {img:faceImg, logo:formLogo, fit:formFit, site:cleanSite($('#f-site').value)};
+  t.className = 'thumb' + faceClass(f);
+  t.innerHTML = faceTag(f);
+  const showFit = !faceImg && !!logoSrc(f);
+  $('#f-fit').hidden = $('#f-fit-l').hidden = !showFit;
+  $('#f-fit').value = formFit;
+  $('#f-nologo').hidden = !formLogo || !!faceImg;
   $('#f-noface').hidden = !faceImg;
   $('#f-face').textContent = faceImg ? 'Rifai la foto' : 'Fotografa il fronte';
 }
@@ -484,6 +521,8 @@ function openForm(c){
   siteAuto = !(c && c.site);
   $('#f-fmt').value = c ? c.format : 'AUTO';
   faceImg = c ? (c.img || null) : null;
+  formLogo = c ? (c.logo || null) : null;
+  formFit = c ? (c.fit || 'contain') : 'contain';
   pickColor(c ? c.color : COLORS[cards.length % COLORS.length]);
   const del = $('#f-del'); del.hidden = !c; del.textContent = 'Elimina tessera';
   preview(); openSheet('#form');
@@ -494,6 +533,78 @@ let siteT; $('#f-site').addEventListener('input', () => { siteAuto = !$('#f-site
 $('#f-fmt').addEventListener('change', preview);
 $('#f-face').addEventListener('click', () => $('#facefile').click());
 $('#f-noface').addEventListener('click', () => { faceImg = null; paintThumb(); });
+$('#f-nologo').addEventListener('click', () => { formLogo = null; paintThumb(); });
+$('#f-fit').addEventListener('change', () => { formFit = $('#f-fit').value; paintThumb(); });
+
+/* ---------- ricerca loghi ---------- */
+const WD = 'https://www.wikidata.org/w/api.php', CM = 'https://commons.wikimedia.org/w/api.php';
+let searchRun = 0;
+$('#f-logo').addEventListener('click', () => {
+  openSheet('#logos');
+  const q = $('#f-name').value.trim();
+  $('#l-q').value = q;
+  if(q) searchLogos(q); else { $('#l-grid').innerHTML = ''; $('#l-status').textContent = 'Scrivi il nome del negozio.'; $('#l-q').focus(); }
+});
+$('#l-back').addEventListener('click', () => openSheet('#form'));
+$('#l-go').addEventListener('click', () => { const q = $('#l-q').value.trim(); if(q) searchLogos(q); });
+$('#l-q').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('#l-go').click(); } });
+
+async function searchLogos(q){
+  const run = ++searchRun, grid = $('#l-grid'), st = $('#l-status');
+  grid.innerHTML = ''; st.textContent = 'Cerco i loghi…';
+  if(!navigator.onLine){ st.textContent = 'Serve la connessione per cercare i loghi.'; return; }
+  const seen = new Set();
+  const add = (url, src) => {
+    if(!url || seen.has(url) || run !== searchRun) return;
+    seen.add(url);
+    const b = document.createElement('button');
+    b.className = 'ltile'; b.setAttribute('aria-label', 'Logo da ' + src);
+    b.innerHTML = '<img alt=""><span>' + esc(src) + '</span>';
+    const im = b.querySelector('img');
+    im.onerror = () => b.remove();
+    im.onload = () => { if(im.naturalWidth < 48) b.remove(); };
+    im.src = url;
+    b.addEventListener('click', () => chooseLogo(url));
+    grid.appendChild(b);
+  };
+  const domains = new Set();
+  const site = cleanSite($('#f-site').value) || guessSite(q);
+  if(site) domains.add(site);
+  const enc = encodeURIComponent;
+  const fileUrl = f => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + enc(f.replace(/ /g,'_')) + '?width=500';
+
+  const wikidata = (async () => {
+    const j = await (await fetch(WD+'?action=wbsearchentities&search='+enc(q)+'&language=it&uselang=it&type=item&limit=6&format=json&origin=*')).json();
+    const ids = (j.search || []).map(x => x.id); if(!ids.length) return;
+    const j2 = await (await fetch(WD+'?action=wbgetentities&ids='+ids.join('|')+'&props=claims&format=json&origin=*')).json();
+    for(const id of ids){
+      const cl = (j2.entities && j2.entities[id] && j2.entities[id].claims) || {};
+      for(const p of ['P154','P8972']) (cl[p] || []).forEach(x => { const f = x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value; if(f) add(fileUrl(f), 'Wikidata'); });
+      (cl.P856 || []).slice(0,1).forEach(x => { const u = x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value; if(u) domains.add(cleanSite(u)); });
+    }
+  })();
+  const commons = (async () => {
+    const j = await (await fetch(CM+'?action=query&generator=search&gsrsearch='+enc(q+' logo')+'&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*')).json();
+    const pages = Object.values((j.query && j.query.pages) || {}).sort((a,b) => (a.index||0) - (b.index||0));
+    pages.forEach(p => { const ii = p.imageinfo && p.imageinfo[0]; if(ii && (ii.thumburl || ii.url)) add(ii.thumburl || ii.url, 'Commons'); });
+  })();
+  await Promise.allSettled([wikidata, commons]);
+  if(run !== searchRun) return;
+  for(const d of domains){
+    if(!d) continue;
+    add('https://icon.horse/icon/' + d, 'Icona sito');
+    add('https://www.google.com/s2/favicons?domain=' + enc(d) + '&sz=256', 'Google');
+    add('https://' + d + '/apple-touch-icon.png', 'Sito');
+  }
+  st.textContent = 'Tocca il logo che preferisci.';
+  setTimeout(() => { if(run === searchRun && !grid.children.length) st.textContent = 'Nessun logo trovato. Prova con un altro nome, oppure scrivi il sito del negozio nella tessera.'; }, 4000);
+}
+function chooseLogo(url){
+  formLogo = url; formFit = 'contain'; faceImg = null;
+  pickColor('#FFFFFF');
+  openSheet('#form');
+  toast('Logo scelto');
+}
 $('#facefile').addEventListener('change', async e => {
   const file = e.target.files[0]; e.target.value = ''; if(!file) return;
   try{ faceImg = await toCardImage(file); paintThumb(); }catch(err){ toast('Foto non leggibile, riprova'); }
@@ -517,7 +628,7 @@ $('#f-save').addEventListener('click', () => {
   const name = $('#f-name').value.trim(), number = cleanNum(), format = $('#f-fmt').value;
   if(!name){ toast('Scrivi il nome del negozio'); $('#f-name').focus(); return; }
   if(!number){ toast('Manca il numero della tessera'); $('#f-num').focus(); return; }
-  const data = {name, number, format, color, img:faceImg || null, site:cleanSite($('#f-site').value)};
+  const data = {name, number, format, color, img:faceImg || null, logo:formLogo || null, fit:formFit, site:cleanSite($('#f-site').value)};
   let added = null;
   if(editing) Object.assign(editing, data);
   else { added = Object.assign({id:uid(), uses:0}, data); cards.push(added); }
@@ -625,7 +736,7 @@ $('#photo').addEventListener('change', async e => {
 
 /* ---------- backup ---------- */
 $('#b-copy').addEventListener('click', async () => {
-  const data = JSON.stringify(cards.map(({name,number,format,color,img,site}) => ({name,number,format,color,img,site})));
+  const data = JSON.stringify(cards.map(({name,number,format,color,img,site,logo,fit}) => ({name,number,format,color,img,site,logo,fit})));
   try{ await navigator.clipboard.writeText(data); toast('Backup copiato'); }
   catch(e){ const t = $('#b-text'); t.value = data; t.select(); toast('Testo selezionato: copialo a mano'); }
 });
@@ -639,7 +750,7 @@ $('#b-import').addEventListener('click', () => {
     const num = String(c.number).replace(/\s+/g,'');
     if(cards.some(x => x.number === num && x.name === c.name)) continue;
     const img = typeof c.img === 'string' && c.img.startsWith('data:image/') ? c.img : null;
-    cards.push({id:uid(), name:String(c.name), number:num, format:c.format || 'AUTO', site:cleanSite(String(c.site || '')), color:/^#[0-9A-Fa-f]{6}$/.test(c.color||'') ? c.color : COLORS[0], img, uses:0});
+    cards.push({id:uid(), name:String(c.name), number:num, format:c.format || 'AUTO', site:cleanSite(String(c.site || '')), logo:(typeof c.logo === 'string' && c.logo.startsWith('https://')) ? c.logo : null, fit:c.fit === 'cover' ? 'cover' : 'contain', color:/^#[0-9A-Fa-f]{6}$/.test(c.color||'') ? c.color : COLORS[0], img, uses:0});
     n++;
   }
   save(); $('#b-text').value = ''; closeSheets();
@@ -647,7 +758,7 @@ $('#b-import').addEventListener('click', () => {
 });
 
 /* ---------- versione e app installabile ---------- */
-const APP_VERSION = '1.3';   // cambia solo questo numero a ogni aggiornamento
+const APP_VERSION = '1.4';   // cambia solo questo numero a ogni aggiornamento
 $('#ver').textContent = 'v' + APP_VERSION;
 let swError = '';
 if('serviceWorker' in navigator){
