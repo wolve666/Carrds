@@ -429,17 +429,26 @@ $('#add-btn').addEventListener('click', () => openForm());
 $('#menu-btn').addEventListener('click', () => { openSheet('#backup'); runChecks(); });
 
 /* ---------- fogli ---------- */
+/* ogni foglio aperto è un passo nella cronologia: il tasto indietro del telefono torna al foglio precedente */
+const depth = () => (history.state && history.state.depth) || 0;
+function showOnly(id){
+  document.querySelectorAll('.sheet').forEach(s => s.hidden = true);
+  if(id !== '#scan') stopScan();
+  if(id !== '#detail') release();
+  if(id){ $(id).hidden = false; document.body.classList.add('locked'); }
+  else { document.body.classList.remove('locked'); render(); }
+}
 function openSheet(id){
-  document.querySelectorAll('.sheet').forEach(s => s.hidden = true);
-  $(id).hidden = false; $(id).scrollTop = 0; document.body.classList.add('locked');
+  if(history.state && history.state.sheet === id) return;
+  history.pushState({sheet:id, depth:depth() + 1}, '');
+  showOnly(id); $(id).scrollTop = 0;
 }
-function closeSheets(){
-  stopScan(); release();
-  document.querySelectorAll('.sheet').forEach(s => s.hidden = true);
-  document.body.classList.remove('locked'); render();
-}
+function goBack(){ if(depth() > 0) history.back(); else showOnly(null); }
+function closeSheets(){ const d = depth(); if(d > 0) history.go(-d); else showOnly(null); }
+addEventListener('popstate', e => showOnly(e.state && e.state.sheet || null));
+history.replaceState(null, '');
 document.addEventListener('click', e => { if(e.target.closest('[data-close]')) closeSheets(); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSheets(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') goBack(); });
 
 /* ---------- codici ---------- */
 function guess(v){
@@ -545,7 +554,7 @@ $('#f-logo').addEventListener('click', () => {
   $('#l-q').value = q;
   if(q) searchLogos(q); else { $('#l-grid').innerHTML = ''; $('#l-status').textContent = 'Scrivi il nome del negozio.'; $('#l-q').focus(); }
 });
-$('#l-back').addEventListener('click', () => openSheet('#form'));
+$('#l-back').addEventListener('click', goBack);
 $('#l-go').addEventListener('click', () => { const q = $('#l-q').value.trim(); if(q) searchLogos(q); });
 $('#l-q').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('#l-go').click(); } });
 
@@ -602,7 +611,7 @@ async function searchLogos(q){
 function chooseLogo(url){
   formLogo = url; formFit = 'contain'; faceImg = null;
   pickColor('#FFFFFF');
-  openSheet('#form');
+  goBack();
   toast('Logo scelto');
 }
 $('#facefile').addEventListener('change', async e => {
@@ -671,7 +680,7 @@ function gotCode(text, fmt){
   stopScan();
   $('#f-num').value = text;
   $('#f-fmt').value = FMT[fmt] || 'CODE128';
-  openSheet('#form'); preview();
+  goBack(); preview();
   toast('Codice letto');
   if(!$('#f-name').value) $('#f-name').focus();
 }
@@ -712,7 +721,7 @@ function stopScan(){
   if(zreader){ try{ zreader.reset(); }catch(e){} zreader = null; }
   const v = $('#video'); if(v) v.srcObject = null;
 }
-$('#scan-stop').addEventListener('click', () => { stopScan(); openSheet('#form'); });
+$('#scan-stop').addEventListener('click', goBack);
 
 $('#f-photo').addEventListener('click', () => $('#photo').click());
 $('#photo').addEventListener('change', async e => {
@@ -758,7 +767,7 @@ $('#b-import').addEventListener('click', () => {
 });
 
 /* ---------- versione e app installabile ---------- */
-const APP_VERSION = '1.4';   // cambia solo questo numero a ogni aggiornamento
+const APP_VERSION = '1.5';   // cambia solo questo numero a ogni aggiornamento
 $('#ver').textContent = 'v' + APP_VERSION;
 let swError = '';
 if('serviceWorker' in navigator){
