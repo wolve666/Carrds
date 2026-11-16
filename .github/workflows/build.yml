@@ -21,9 +21,9 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Leggo la versione da www/index.html
+      - name: Leggo la versione (APPV) da www/index.html
         id: v
-        run: echo "ver=$(grep -oP "APP_VERSION = '\K[0-9.]+" www/index.html)" >> $GITHUB_OUTPUT
+        run: echo "ver=$(grep -oP "var APPV = '\K[0-9.]+" www/index.html)" >> $GITHUB_OUTPUT
 
       - run: npm install
       - run: npx cap add android
