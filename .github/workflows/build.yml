@@ -31,9 +31,16 @@ jobs:
       - name: Icona
         run: npx --yes @capacitor/assets generate --android
 
-      - name: Permesso fotocamera, versione
+      - name: Codice nativo (widget, luminosità), manifest, versione
         run: |
-          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />#' android/app/src/main/AndroidManifest.xml
+          J=android/app/src/main/java/it/educk/carrds
+          R=android/app/src/main/res
+          mkdir -p $J $R/layout $R/xml $R/drawable
+          cp native/java/*.java $J/
+          cp native/res/layout/*.xml $R/layout/
+          cp native/res/xml/*.xml $R/xml/
+          cp native/res/drawable/*.xml $R/drawable/
+          python3 native/patch_manifest.py
           sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"${{ steps.v.outputs.ver }}\"/" android/app/build.gradle
 
       - run: npx cap sync android
