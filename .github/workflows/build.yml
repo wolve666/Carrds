@@ -28,9 +28,6 @@ jobs:
       - run: npm install
       - run: npx cap add android
 
-      - name: Icona
-        run: npx --yes @capacitor/assets generate --android
-
       - name: Codice nativo (widget, luminosità), manifest, versione
         run: |
           J=android/app/src/main/java/it/educk/carrds
@@ -40,6 +37,7 @@ jobs:
           cp native/res/layout/*.xml $R/layout/
           cp native/res/xml/*.xml $R/xml/
           cp native/res/drawable/*.xml $R/drawable/
+          cp -r native/res/mipmap-* $R/
           python3 native/patch_manifest.py
           sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"${{ steps.v.outputs.ver }}\"/" android/app/build.gradle
 
