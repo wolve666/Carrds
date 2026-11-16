@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon-512.png" alt="Icona di Carrds" width="160">
+  <img src="assets/icon-only.png" alt="Icona di Carrds" width="160">
 </p>
 
 <h1 align="center">Carrds</h1>
