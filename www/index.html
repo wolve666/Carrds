@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script>
 // versione dell'app e della parte Android (APPN si alza solo quando cambiano native/, build.yml o i permessi)
-var APPV = '2.3', APPN = 1;
+var APPV = '2.4', APPN = 2;
 // aggiornamenti in app: se è stata scaricata una versione più nuova e compatibile, parte quella al posto di questa
 (function(){
   if(window.__LIVE) return;
@@ -345,11 +345,10 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
 <section class="sheet" id="backup" hidden aria-label="Backup">
   <div class="inner">
     <div class="top"><h2>Backup e app</h2><button class="x" data-close aria-label="Chiudi">×</button></div>
-    <p class="hint">Le tessere restano salvate solo su questo telefono, anche senza rete. Per passarle a un altro telefono copia il backup, mandalo in chat e incollalo qui sull’altro dispositivo.</p>
-    <div class="row"><button class="btn primary" id="b-copy">Copia backup</button></div>
-    <label for="b-text">Incolla un backup</label>
-    <textarea id="b-text" placeholder="Incolla qui il testo del backup"></textarea>
-    <div class="row"><button class="btn" id="b-import">Importa tessere</button></div>
+    <p class="hint">Le tessere restano salvate solo su questo telefono. Il backup è un file con tutte le tessere, loghi e foto compresi: puoi salvarlo nel telefono o mandarlo dove vuoi, e ripristinarlo qui su qualsiasi telefono.</p>
+    <div class="row"><button class="btn primary" id="b-share">Condividi backup</button><button class="btn" id="b-save">Salva in Download</button></div>
+    <div class="row"><button class="btn" id="b-file">Ripristina da file</button></div>
+    <p class="hint" id="b-last"></p>
     <span class="lbl" style="margin-top:2rem">Widget</span>
     <p class="hint">Il widget mostra le tessere con la stellina ★ (fino a quattro). La stellina si mette sul retro della tessera.</p>
     <div class="row"><button class="btn" id="b-widget">Aggiungi widget alla Home</button></div>
@@ -363,6 +362,7 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
 
 <input type="file" id="photo" accept="image/*" capture="environment" hidden>
 <input type="file" id="facefile" accept="image/*" capture="environment" hidden>
+<input type="file" id="bfile" hidden>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1035,16 +1035,42 @@ $('#photo').addEventListener('change', async e => {
   }catch(err){ toast('Nessun codice trovato: riprova più vicino e a fuoco'); }
 });
 
-/* ---------- backup ---------- */
-$('#b-copy').addEventListener('click', async () => {
-  const data = JSON.stringify(cards.map(({name,number,format,color,img,site,logo,fit,star}) => ({name,number,format,color,img,site,logo,fit,star})));
-  try{ await navigator.clipboard.writeText(data); toast('Backup copiato'); }
-  catch(e){ const t = $('#b-text'); t.value = data; t.select(); toast('Testo selezionato: copialo a mano'); }
+/* ---------- backup su file ---------- */
+function backupName(){ const d = new Date(), z = n => String(n).padStart(2, '0'); return 'carrds-backup-' + d.getFullYear() + '-' + z(d.getMonth()+1) + '-' + z(d.getDate()) + '.json'; }
+function backupData(){
+  return JSON.stringify({app:'Carrds', version:APP_VERSION, date:new Date().toISOString(),
+    cards:cards.map(({name,number,format,color,img,site,logo,fit,star}) => ({name,number,format,color,img,site,logo,fit,star}))});
+}
+function noteBackup(t){ try{ localStorage.setItem('carrds-lastbackup', t); }catch(e){} showLastBackup(); }
+function showLastBackup(){ let t = null; try{ t = localStorage.getItem('carrds-lastbackup'); }catch(e){} $('#b-last').textContent = t ? 'Ultimo backup: ' + t : ''; }
+$('#b-share').addEventListener('click', async () => {
+  if(!cards.length) return toast('Nessuna tessera da salvare');
+  const name = backupName(), data = backupData();
+  try{
+    if(NAT){ await NAT.shareFile({name, data}); noteBackup(new Date().toLocaleDateString('it-IT') + ', condiviso'); return; }
+    const f = new File([data], name, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name}); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }catch(e){ toast('Condivisione non riuscita'); }
 });
-$('#b-import').addEventListener('click', () => {
-  let arr;
-  try{ arr = JSON.parse($('#b-text').value.trim()); }catch(e){ toast('Il testo incollato non è un backup valido'); return; }
-  if(!Array.isArray(arr)){ toast('Il testo incollato non è un backup valido'); return; }
+$('#b-save').hidden = !NAT;
+$('#b-save').addEventListener('click', async () => {
+  if(!cards.length) return toast('Nessuna tessera da salvare');
+  try{
+    const r = await NAT.saveDownload({name:backupName(), data:backupData()});
+    const where = (r && r.path) || 'Download/Carrds';
+    toast('Salvato in ' + where); noteBackup(new Date().toLocaleDateString('it-IT') + ' in ' + where);
+  }catch(e){ toast('Salvataggio non riuscito: usa Condividi backup'); }
+});
+$('#b-file').addEventListener('click', () => $('#bfile').click());
+$('#bfile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  let j; try{ j = JSON.parse(await f.text()); }catch(err){ return toast('Questo file non è un backup di Carrds'); }
+  const arr = Array.isArray(j) ? j : (j && Array.isArray(j.cards) ? j.cards : null);
+  if(!arr) return toast('Questo file non è un backup di Carrds');
+  importCards(arr);
+});
+function importCards(arr){
   let n = 0;
   for(const c of arr){
     if(!c || !c.name || !c.number) continue;
@@ -1054,9 +1080,11 @@ $('#b-import').addEventListener('click', () => {
     cards.push({id:uid(), name:String(c.name), number:num, format:c.format || 'AUTO', site:cleanSite(String(c.site || '')), logo:(typeof c.logo === 'string' && (c.logo.startsWith('https://') || c.logo.startsWith('data:image/'))) ? c.logo : null, fit:c.fit === 'cover' ? 'cover' : 'contain', color:/^#[0-9A-Fa-f]{6}$/.test(c.color||'') ? c.color : COLORS[0], img, star:!!c.star && cards.filter(x => x.star).length < 4, uses:0});
     n++;
   }
-  save(); queueWidget(); dirty = true; $('#b-text').value = ''; closeSheets();
-  toast(n ? (n === 1 ? 'Importata 1 tessera' : 'Importate ' + n + ' tessere') : 'Nessuna tessera nuova da importare');
-});
+  if(!save()) return;
+  queueWidget(); dirty = true; closeSheets();
+  toast(n ? (n === 1 ? 'Ripristinata 1 tessera' : 'Ripristinate ' + n + ' tessere') : 'Nessuna tessera nuova: erano già tutte qui');
+}
+showLastBackup();
 
 /* ---------- versione e aggiornamenti ---------- */
 const APP_VERSION = APPV;   // la versione si cambia in cima al file (APPV)

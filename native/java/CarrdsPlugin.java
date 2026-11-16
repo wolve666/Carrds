@@ -2,8 +2,14 @@ package it.educk.carrds;
 
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import androidx.core.content.FileProvider;
 import android.util.Base64;
 import android.view.WindowManager;
 import com.getcapacitor.JSArray;
@@ -14,6 +20,8 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 
 /* Ponte tra l'app e Android: luminosità dello schermo e widget */
@@ -58,6 +66,53 @@ public class CarrdsPlugin extends Plugin {
         ctx.getSharedPreferences(CarrdsWidget.PREFS, Context.MODE_PRIVATE).edit().putString("ids", ids.toString()).apply();
         CarrdsWidget.updateAll(ctx);
         call.resolve();
+    }
+
+    /* backup: apre il menu Condividi di Android con il file (WhatsApp, Drive, email...) */
+    @PluginMethod
+    public void shareFile(PluginCall call) {
+        String name = call.getString("name", "carrds-backup.json");
+        String data = call.getString("data", "");
+        try {
+            File dir = new File(getContext().getCacheDir(), "backup");
+            if (!dir.exists()) dir.mkdirs();
+            File f = new File(dir, name);
+            try (FileOutputStream out = new FileOutputStream(f)) { out.write(data.getBytes(StandardCharsets.UTF_8)); }
+            Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("application/json");
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.putExtra(Intent.EXTRA_SUBJECT, name);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Intent chooser = Intent.createChooser(send, "Condividi il backup di Carrds");
+            chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().startActivity(chooser);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Condivisione non riuscita: " + e.getMessage());
+        }
+    }
+
+    /* backup: salva il file nella cartella Download/Carrds del telefono */
+    @PluginMethod
+    public void saveDownload(PluginCall call) {
+        String name = call.getString("name", "carrds-backup.json");
+        String data = call.getString("data", "");
+        if (Build.VERSION.SDK_INT < 29) { call.reject("Serve Android 10 o successivo"); return; }
+        try {
+            ContentValues cv = new ContentValues();
+            cv.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+            cv.put(MediaStore.MediaColumns.MIME_TYPE, "application/json");
+            cv.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Carrds");
+            Uri uri = getContext().getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+            if (uri == null) throw new Exception("cartella non disponibile");
+            try (OutputStream out = getContext().getContentResolver().openOutputStream(uri)) { out.write(data.getBytes(StandardCharsets.UTF_8)); }
+            JSObject r = new JSObject();
+            r.put("path", "Download/Carrds/" + name);
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("Salvataggio non riuscito: " + e.getMessage());
+        }
     }
 
     /* chiede ad Android di aggiungere il widget alla Home */

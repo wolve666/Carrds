@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versione-2.3-D7263D" alt="Versione 2.3">
+  <img src="https://img.shields.io/badge/versione-2.4-D7263D" alt="Versione 2.4">
   <img src="https://img.shields.io/badge/Android-APK-46AAF5" alt="App Android">
   <img src="https://img.shields.io/badge/funziona-offline-2E9E5B" alt="Funziona offline">
   <img src="https://img.shields.io/badge/dati-solo%20sul%20telefono-3A3F4B" alt="Dati solo sul telefono">
@@ -165,12 +165,11 @@ La ricerca interroga più fonti in parallelo e mostra i risultati in una griglia
 
 Dal tasto **⋯ → Backup e app**:
 
-1. **Copia backup**: tutte le tessere, con loghi e foto, vengono copiate come testo.
-2. Invia il testo all’altro telefono, per esempio in chat.
-3. Sull’altro telefono: **⋯ → Incolla un backup → Importa tessere**.
+- **Condividi backup**: crea il file `carrds-backup-AAAA-MM-GG.json` con tutte le tessere, loghi e foto compresi, e apre il menu Condividi di Android (WhatsApp, Drive, email…).
+- **Salva in Download**: salva lo stesso file nel telefono, nella cartella **Download/Carrds**.
+- **Ripristina da file**: scegli un file di backup e le tessere vengono aggiunte. Quelle già presenti con lo stesso nome e numero non vengono duplicate.
 
-Le tessere già presenti con lo stesso nome e numero non vengono duplicate.
-
+Sotto i tasti l’app ricorda quando hai fatto l’ultimo backup.
 ---
 
 ## Struttura del progetto
@@ -213,7 +212,7 @@ Carrds/
 
 In cima a `www/index.html` c’è la riga:
 ```js
-var APPV = '2.3', APPN = 1;
+var APPV = '2.4', APPN = 2;
 ```
 - **`APPV`** è la versione mostrata accanto al nome: si alza a **ogni** aggiornamento.
 - **`APPN`** è la versione della parte Android: si alza **solo** quando cambiano `native/`, `build.yml` o i permessi.
@@ -249,6 +248,7 @@ La chiave va conservata fuori dal repository: senza, Android non accetta gli agg
 
 | Versione | Novità |
 |---|---|
+| **2.4** | Backup su file: condividi, salva in Download/Carrds, ripristina da file (serve la nuova APK) |
 | **2.3** | Aggiornamenti dentro l’app: se cambia solo la pagina non serve scaricare l’APK (questa va installata ancora come APK) |
 | **2.2** | Retro della tessera compatto, animazioni più fluide, luminosità come opzione, loghi dei siti anche nel widget, icona corretta |
 | **2.1** | Tessere che si allargano e si girano, nome sul logo, tre temi (nuovo Portafoglio), widget con stelline, luminosità al massimo, loghi HD con Brandfetch e icone dei siti |
