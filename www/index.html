@@ -19,6 +19,12 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
+:root[data-theme="wallet"]{
+  --bg:#58B6F7; --sheet:rgba(74,168,240,.96); --surface:#FFF4DE; --ink:#2B1608; --muted:#3B2A1C;
+  --red:#8B4A22; --red-soft:#E9A84A; --on-red:#FFF4DE; --halo:rgba(92,46,18,.35);
+  --pat:0; --blob:rgba(255,255,255,.22);
+  color-scheme:light;
+}
 :root[data-theme="dark"]{
   --bg:#000000; --sheet:rgba(0,0,0,.92); --surface:#120608; --ink:#F6E9EB; --muted:#B88E94;
   --red:#FF3B52; --red-soft:#3A0E15; --on-red:#FFFFFF; --halo:rgba(255,59,82,.42);
@@ -26,6 +32,7 @@
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
   font:400 1rem/1.45 'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
@@ -40,6 +47,14 @@ button{font:inherit;cursor:pointer;color:inherit}
 .bg::before,.bg::after{content:"";position:absolute;border-radius:50%;filter:blur(60px);background:var(--blob)}
 .bg::before{width:22rem;height:22rem;left:-8rem;top:-6rem}
 .bg::after{width:26rem;height:26rem;right:-10rem;bottom:-8rem}
+:root[data-theme="wallet"] .bg{background:repeating-conic-gradient(from -90deg at 50% -8%,rgba(255,255,255,.09) 0 5deg,transparent 5deg 12deg),radial-gradient(120% 70% at 50% 0%,#A7DBFF 0%,#58B6F7 45%,#3B9FEA 100%)}
+:root[data-theme="wallet"] h1{color:#FFF4DE !important;text-shadow:0 3px 0 #5C2E12,0 0 2px #5C2E12}
+:root[data-theme="wallet"] .round,:root[data-theme="wallet"] .btn{border:2px dashed #E9A84A;box-shadow:0 4px 0 #5C2E12}
+:root[data-theme="wallet"] .round,:root[data-theme="wallet"] .btn:not(.primary):not(.quiet){background:#8B4A22;color:#FFF4DE}
+:root[data-theme="wallet"] .btn.primary{background:#E9A84A;color:#3A1E0C;border-color:#8B4A22}
+:root[data-theme="wallet"] .btn.quiet{background:transparent;color:#2B1608;border-color:#8B4A22;box-shadow:none}
+:root[data-theme="wallet"] .ver{background:#8B4A22;color:#FFF4DE;border-color:#E9A84A}
+:root[data-theme="wallet"] #search{border-color:#8B4A22}
 
 main{position:relative;z-index:1;max-width:34rem;margin:0 auto;padding:1.25rem 1rem 3rem}
 header{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem}
@@ -63,19 +78,49 @@ h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;margin:0;flex:1;line-h
 
 /* griglia tessere */
 .wallet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.slot{position:relative;min-width:0}
+.slot.ex{grid-column:1/-1}
+.flipper{position:relative;aspect-ratio:1.586;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1),height .35s ease}
+.slot.fl .flipper{transform:rotateY(180deg);aspect-ratio:auto}
+.slot.snap .flipper{transition:none}
+.slot.flat .flipper{transform:none;transition:none}
+.slot.flat .front{visibility:hidden}
+.slot.flat .back{transform:none}
+.side{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.back{transform:rotateY(180deg);border-radius:16px;background:var(--surface);border:1.5px solid var(--red);
+  box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 18px var(--halo);padding:1rem;overflow:hidden;visibility:hidden}
+.slot.fl .back{visibility:visible}
+.back #fbody>.row:first-child{margin-top:0}
+.back #f-prev{display:none}
+#f-cancel{display:none}
+.back #f-cancel{display:block}
+.codep{display:none;position:relative;z-index:2}
+.slot.ex .codep{display:block;animation:slide .35s .12s cubic-bezier(.2,.8,.2,1) both}
+.slot.fl .codep{display:none}
+@keyframes slide{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+.chint{text-align:center}
+.tag{display:none;position:absolute;top:.45rem;right:.45rem;max-width:72%;font-weight:800;font-size:.74rem;line-height:1.15;letter-spacing:.01em;
+  color:#fff;background:rgba(10,10,14,.58);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:.24rem .55rem;border-radius:999px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.3);z-index:1}
+.haslogo .tag,.photo .tag{display:block}
+.slot.ex .tag{font-size:1rem;top:.75rem;right:.75rem;padding:.38rem .8rem}
+.star{position:absolute;left:.45rem;bottom:.35rem;font-size:.85rem;color:#FFD36A;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:1}
+.hd{position:absolute;top:.3rem;right:.3rem;font:800 .62rem/1 inherit;font-style:normal;background:#2E9E5B;color:#fff;padding:.18rem .35rem;border-radius:6px}
 .card{appearance:none;border:0;padding:0;text-align:left;width:100%;aspect-ratio:1.586;
   border-radius:14px;background-color:var(--c);background-size:cover;background-position:center;color:var(--t);
   position:relative;overflow:hidden;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 6px 16px rgba(0,0,0,.18);
   transition:transform .15s ease}
 .card:active{transform:scale(.97)}
+.side.card{aspect-ratio:auto;height:100%}
+.slot.ex .card:active{transform:none}
 .card .name{position:absolute;left:.75rem;right:.75rem;bottom:.6rem;font-size:1.05rem;font-weight:800;
   letter-spacing:-.01em;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card .tail{position:absolute;top:.55rem;right:.7rem;font-size:.75rem;opacity:.8;font-variant-numeric:tabular-nums}
 .card::after{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.28)}
 .flogo{position:absolute;left:9%;top:9%;width:82%;height:82%;object-fit:contain;display:block}
 .cover .flogo{left:0;top:0;width:100%;height:100%;object-fit:cover}
-.haslogo .name,.haslogo .tail,.bigcard.haslogo span{display:none}
+.haslogo .name,.haslogo .tail,.photo .name,.photo .tail{display:none}
 .thumb{position:relative;overflow:hidden}
 .lsearch{display:flex;gap:.6rem;margin-top:.6rem}
 .lsearch input{flex:1}
@@ -85,9 +130,6 @@ h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;margin:0;flex:1;line-h
 .ltile img{position:absolute;left:10%;top:10%;width:80%;height:72%;object-fit:contain}
 .ltile span{position:absolute;left:0;right:0;bottom:0;font-size:.7rem;color:#7A5A5F;background:rgba(255,255,255,.85);padding:.1rem 0}
 .ltile:active{transform:scale(.97)}
-.card.photo .name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-.card.photo::before{content:"";position:absolute;inset:auto 0 0 0;height:55%;background:linear-gradient(transparent,rgba(0,0,0,.6))}
-.card.photo .tail{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 
 .empty{grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--muted)}
 .empty p{font-size:1.15rem;margin:0 0 1rem}
@@ -101,11 +143,6 @@ h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;margin:0;flex:1;line-h
 .inner{max-width:30rem;margin:0 auto}
 @keyframes rise{from{transform:translateY(24px);opacity:.3}to{transform:none;opacity:1}}
 
-.bigcard{width:100%;aspect-ratio:1.586;max-width:24rem;margin:0 auto;border-radius:18px;
-  background-color:var(--c);background-size:cover;background-position:center;color:var(--t);
-  position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 30px var(--halo)}
-.bigcard span{position:absolute;left:1.1rem;right:1.1rem;bottom:1rem;font-size:1.8rem;font-weight:800;letter-spacing:-.025em;line-height:1.05;overflow-wrap:anywhere}
-.bigcard.photo span{display:none}
 .codebox{background:#FFFFFF;color:#000;border-radius:16px;padding:1.2rem 1rem 1rem;
   margin:-2.2rem .6rem 0;position:relative;border:1.5px solid var(--red);
   box-shadow:0 8px 24px rgba(0,0,0,.18),0 0 22px var(--halo);text-align:center}
@@ -151,7 +188,7 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
   box-shadow:0 0 20px var(--halo);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:90vw;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
-@media (prefers-reduced-motion: reduce){.sheet{animation:none}.card,.btn,.round{transition:none}}
+@media (prefers-reduced-motion: reduce){.sheet{animation:none}.card,.btn,.round,.flipper{transition:none}.slot.ex .codep{animation:none}}
 </style>
 </head>
 <body>
@@ -196,24 +233,10 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
   <div class="wallet" id="wallet"></div>
 </main>
 
-<section class="sheet" id="detail" hidden aria-label="Tessera">
-  <div class="inner">
-    <div class="bigcard" id="d-card"><span id="d-name"></span></div>
-    <div class="codebox" id="d-box">
-      <div id="d-code"></div>
-      <div class="num" id="d-num"></div>
-    </div>
-    <p class="hint" style="text-align:center">Alza la luminosità se il lettore fa fatica.</p>
-    <div class="row">
-      <button class="btn" id="d-edit">Modifica</button>
-      <button class="btn primary" data-close>Chiudi</button>
-    </div>
-  </div>
-</section>
-
 <section class="sheet" id="form" hidden aria-label="Tessera da salvare">
   <div class="inner">
     <div class="top"><h2 id="f-title">Nuova tessera</h2><button class="x" data-close aria-label="Chiudi">×</button></div>
+    <div id="fbody">
     <div class="row" style="margin-top:.6rem">
       <button class="btn primary" id="f-scan">Inquadra il codice</button>
       <button class="btn" id="f-photo">Codice da foto</button>
@@ -256,9 +279,12 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
     </select>
     <span class="lbl">Colore di sfondo</span>
     <div class="swatches" id="f-colors" style="margin-top:.7rem"></div>
+    <div class="row"><button class="btn" id="f-star" aria-pressed="false">☆ Metti nel widget</button></div>
     <div class="codebox" id="f-prev"></div>
     <div class="row"><button class="btn primary" id="f-save">Salva tessera</button></div>
+    <div class="row"><button class="btn quiet" id="f-cancel">Gira senza salvare</button></div>
     <div class="row"><button class="btn quiet" id="f-del" hidden>Elimina tessera</button></div>
+    </div>
   </div>
 </section>
 
@@ -290,6 +316,9 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
     <label for="b-text">Incolla un backup</label>
     <textarea id="b-text" placeholder="Incolla qui il testo del backup"></textarea>
     <div class="row"><button class="btn" id="b-import">Importa tessere</button></div>
+    <span class="lbl" style="margin-top:2rem">Widget</span>
+    <p class="hint">Il widget mostra le tessere con la stellina ★ (fino a quattro). La stellina si mette sul retro della tessera.</p>
+    <div class="row"><button class="btn" id="b-widget">Aggiungi widget alla Home</button></div>
     <span class="lbl" style="margin-top:2rem">Aggiornamenti</span>
     <p class="hint" id="upd-hint">Versione installata: <b id="upd-cur"></b></p>
     <div class="row"><button class="btn primary" id="b-update">Verifica aggiornamenti</button></div>
@@ -308,7 +337,10 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let cards = load();
 let siteAuto = true;
 let formLogo = null, formFit = 'contain';
-let current = null, editing = null, wakeLock = null, color = COLORS[1], faceImg = null, delArmed = false;
+let editing = null, wakeLock = null, color = COLORS[1], faceImg = null, delArmed = false, formStar = false;
+let shownEx = null, shownFl = false, dirty = false, pendingAdd = false, pendingOpen = null;
+const BF = '1idPpdlx7-uxWck8vXP';   // Client ID Brandfetch (pubblico)
+const NAT = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Carrds;
 
 function load(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : []; }catch(e){ return []; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(cards)); return true; }catch(e){ toast('Spazio pieno: togli qualche foto delle tessere'); return false; } }
@@ -351,15 +383,17 @@ window.logoFail = img => { const p = img.parentNode; img.remove(); if(p) p.class
 let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),2200); }
 
 /* ---------- tema ---------- */
+const THEMES = {light:'Rosso', dark:'Notte', wallet:'Portafoglio'};
 $('#theme-btn').addEventListener('click', () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  const k = Object.keys(THEMES), cur = document.documentElement.dataset.theme;
+  const next = k[(k.indexOf(cur) + 1) % k.length];
   document.documentElement.dataset.theme = next;
   try{ localStorage.setItem('tessere.theme', next); }catch(e){}
-  syncThemeColor();
+  syncThemeColor(); toast('Tema ' + THEMES[next]);
 });
 
 /* ---------- elenco ---------- */
-function syncThemeColor(){ const m = document.querySelector('meta[name="theme-color"]'); if(m) m.content = document.documentElement.dataset.theme === 'dark' ? '#000000' : '#FFFFFF'; }
+function syncThemeColor(){ const m = document.querySelector('meta[name="theme-color"]'); if(m) m.content = ({dark:'#000000', wallet:'#58B6F7'})[document.documentElement.dataset.theme] || '#FFFFFF'; }
 syncThemeColor();
 function cardStyle(c){ return '--c:'+c.color+';--t:'+textOn(c.color)+(c.img ? ';background-image:url('+c.img+')' : ''); }
 function render(){
@@ -373,14 +407,34 @@ function render(){
   const list = cards.filter(c => !q || c.name.toLowerCase().includes(q))
     .sort((a,b) => (b.uses||0) - (a.uses||0) || a.name.localeCompare(b.name,'it'));
   if(!list.length){ w.innerHTML = '<p class="empty">Nessuna tessera con “' + esc(q) + '”.</p>'; return; }
-  w.innerHTML = list.map(c =>
-    '<button class="card'+faceClass(c)+'" data-id="'+c.id+'" aria-label="'+esc(c.name)+'" style="'+cardStyle(c)+'">' +
-    faceTag(c) + '<span class="tail">•••• '+esc(c.number.slice(-4))+'</span><span class="name">'+esc(c.name)+'</span></button>').join('');
+  w.innerHTML = list.map(c => '<div class="slot" data-id="'+esc(c.id)+'"><div class="flipper">' + frontHTML(c) +
+    '<div class="side back"></div></div><div class="codep"><div class="codebox"><div class="ccode"></div><div class="num"></div></div>' +
+    '<p class="hint chint">Tocca la tessera per girarla e modificarla</p><div class="row"><button class="btn quiet" data-act="close">Chiudi</button></div></div></div>').join('');
+  const el = slotOf(shownEx);
+  if(el){ el.classList.add('ex'); fillCode(el); if(shownFl){ mountForm(el); el.classList.add('fl','flat'); sizeBack(el); } }
+  else if(shownEx){ unmountForm(); shownEx = null; shownFl = false; brightness(false); }
+}
+function frontHTML(c){
+  return '<button class="card side front'+faceClass(c)+'" aria-label="'+esc(c.name)+'" style="'+cardStyle(c)+'">' + faceTag(c) +
+    '<span class="tail">•••• '+esc(c.number.slice(-4))+'</span><span class="name">'+esc(c.name)+'</span><span class="tag">'+esc(c.name)+'</span>' +
+    (c.star ? '<span class="star" aria-label="Nel widget">★</span>' : '') + '</button>';
+}
+function slotOf(id){ return id ? document.querySelector('.wallet .slot[data-id="'+CSS.escape(id)+'"]') : null; }
+function fillCode(el){
+  const c = cards.find(x => x.id === el.dataset.id); if(!c) return;
+  drawCode(el.querySelector('.ccode'), c.number, c.format);
+  el.querySelector('.codebox').classList.toggle('qr', c.format === 'QR');
+  el.querySelector('.num').textContent = group(c.number);
+}
+function refreshSlot(c){
+  const el = slotOf(c.id); if(!el) return;
+  el.querySelector('.front').outerHTML = frontHTML(c);
+  fillCode(el);
 }
 
 /* animazione di apertura: le tessere si impilano una sopra l'altra, poi si dispongono in griglia */
 function dealIn(){
-  const els = [...document.querySelectorAll('.wallet .card')];
+  const els = [...document.querySelectorAll('.wallet .slot')];
   if(reduce || !els.length || !Element.prototype.animate) return;
   const vh = window.innerHeight;
   const visible = els.filter(el => el.getBoundingClientRect().top < vh);
@@ -409,34 +463,121 @@ function dealIn(){
 }
 
 $('#wallet').addEventListener('click', e => {
-  const c = e.target.closest('.card'); if(c) return openCard(c.dataset.id);
-  if(e.target.closest('[data-act="add"]')) openForm();
+  if(e.target.closest('[data-act="add"]')) return openForm();
+  const el = e.target.closest('.slot'); if(!el) return;
+  if(e.target.closest('[data-act="close"]')) return closeSheets();
+  if(el.classList.contains('fl') || shownFl) return;
+  if(!el.classList.contains('ex')) return expandCard(el.dataset.id);
+  if(e.target.closest('.front')) pushState({ex:el.dataset.id, fl:true});
 });
 $('#search').addEventListener('input', render);
-$('#add-btn').addEventListener('click', () => openForm());
+$('#add-btn').addEventListener('click', () => { if(shownEx){ pendingAdd = true; closeSheets(); } else openForm(); });
 $('#menu-btn').addEventListener('click', () => openSheet('#backup'));
 
-/* ---------- fogli ---------- */
-/* ogni foglio aperto è un passo nella cronologia: il tasto indietro del telefono torna al foglio precedente */
-const depth = () => (history.state && history.state.depth) || 0;
-function showOnly(id){
-  document.querySelectorAll('.sheet').forEach(s => s.hidden = true);
-  if(id !== '#scan') stopScan();
-  if(id !== '#detail') release();
-  if(id){ $(id).hidden = false; document.body.classList.add('locked'); }
-  else { document.body.classList.remove('locked'); render(); }
+/* ---------- stati: fogli, tessera aperta, tessera girata ----------
+   ogni passo è nella cronologia, così il tasto indietro del telefono torna al passo precedente */
+const st = () => history.state || {};
+const depth = () => st().depth || 0;
+function pushState(o){ history.pushState(Object.assign({}, o, {depth:depth() + 1}), ''); applyState(history.state); }
+function applyState(s){
+  s = s || {};
+  document.querySelectorAll('.sheet').forEach(x => x.hidden = true);
+  if(s.sheet !== '#scan') stopScan();
+  if(s.sheet){ $(s.sheet).hidden = false; document.body.classList.add('locked'); }
+  else document.body.classList.remove('locked');
+  setExpanded(s.ex || null, !!s.fl);
+  if(!s.sheet && !s.ex){
+    if(dirty && !collapsing){ dirty = false; render(); }
+    if(pendingAdd){ pendingAdd = false; setTimeout(() => openForm(), 0); }
+    if(pendingOpen){ const id = pendingOpen; pendingOpen = null; setTimeout(() => expandCard(id), 0); }
+  }
 }
 function openSheet(id){
-  if(history.state && history.state.sheet === id) return;
-  history.pushState({sheet:id, depth:depth() + 1}, '');
-  showOnly(id); $(id).scrollTop = 0;
+  if(st().sheet === id) return;
+  pushState(Object.assign({}, st(), {sheet:id}));
+  $(id).scrollTop = 0;
 }
-function goBack(){ if(depth() > 0) history.back(); else showOnly(null); }
-function closeSheets(){ const d = depth(); if(d > 0) history.go(-d); else showOnly(null); }
-addEventListener('popstate', e => showOnly(e.state && e.state.sheet || null));
+function goBack(){ if(depth() > 0) history.back(); else applyState(null); }
+function closeSheets(){ const d = depth(); if(d > 0) history.go(-d); else applyState(null); }
+addEventListener('popstate', e => applyState(e.state));
 history.replaceState(null, '');
 document.addEventListener('click', e => { if(e.target.closest('[data-close]')) closeSheets(); });
 document.addEventListener('keydown', e => { if(e.key === 'Escape') goBack(); });
+
+/* ---------- tessera che si allarga e si gira ---------- */
+let collapsing = false;
+function expandCard(id){
+  const c = cards.find(x => x.id === id); if(!c) return;
+  if($('#search').value && !slotOf(id)){ $('#search').value = ''; render(); }
+  c.uses = (c.uses || 0) + 1; save();
+  if(st().ex && !st().fl && !st().sheet){ history.replaceState(Object.assign({}, st(), {ex:id}), ''); applyState(history.state); }
+  else pushState({ex:id});
+}
+function animateLayout(change){
+  const els = [...document.querySelectorAll('.wallet > .slot')];
+  const before = new Map(els.map(e => [e, e.getBoundingClientRect()]));
+  change();
+  if(reduce || !Element.prototype.animate) return;
+  els.forEach(e => {
+    const a = before.get(e), b = e.getBoundingClientRect();
+    if(!b.width) return;
+    const dx = a.left - b.left, dy = a.top - b.top, k = a.width / b.width;
+    if(Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(k - 1) < .01) return;
+    e.animate([{transformOrigin:'0 0', transform:'translate('+dx+'px,'+dy+'px) scale('+k+')'},{transformOrigin:'0 0', transform:'none'}],
+      {duration:480, easing:'cubic-bezier(.2,.8,.2,1)'});
+  });
+}
+function setExpanded(id, fl){
+  if(id !== shownEx){
+    const old = slotOf(shownEx);
+    if(old && shownFl) flipClose(old, true);
+    shownFl = false;
+    animateLayout(() => {
+      document.querySelectorAll('.wallet .slot.ex').forEach(x => x.classList.remove('ex','fl','flat'));
+      const el = slotOf(id); if(el){ el.classList.add('ex'); fillCode(el); }
+    });
+    shownEx = id;
+    const el = slotOf(id);
+    if(el){
+      brightness(true); keepAwake();
+      setTimeout(() => { const t = el.getBoundingClientRect().top + scrollY - 90; scrollTo({top:Math.max(0, t), behavior: reduce ? 'auto' : 'smooth'}); }, 60);
+    }else{
+      brightness(false); release();
+      collapsing = true;
+      setTimeout(() => { collapsing = false; if(dirty && !shownEx){ dirty = false; render(); } }, 520);
+    }
+  }
+  if(fl !== shownFl){
+    const el = slotOf(id);
+    if(el){ if(fl) flipOpen(el); else flipClose(el); }
+    shownFl = fl;
+  }
+}
+function mountForm(el){ el.querySelector('.back').appendChild($('#fbody')); }
+function unmountForm(){ const f = $('#fbody'), home = $('#form .inner'); if(f.parentNode !== home) home.appendChild(f); }
+function sizeBack(el){
+  const fl = el.querySelector('.flipper'), h = $('#fbody').offsetHeight + 34;
+  fl.style.height = Math.max(fl.offsetWidth / 1.586, h) + 'px';
+}
+function flipOpen(el){
+  const c = cards.find(x => x.id === el.dataset.id); if(!c) return;
+  fillForm(c); mountForm(el);
+  const fl = el.querySelector('.flipper');
+  fl.style.height = fl.offsetHeight + 'px';
+  el.classList.add('fl');
+  requestAnimationFrame(() => sizeBack(el));
+  setTimeout(() => { if(el.classList.contains('fl')) el.classList.add('flat'); }, 560);
+}
+function flipClose(el, instant){
+  const fl = el.querySelector('.flipper');
+  if(el.classList.contains('flat')){ el.classList.add('snap'); el.classList.remove('flat'); void fl.offsetWidth; el.classList.remove('snap'); }
+  if(instant){ el.classList.remove('fl'); fl.style.height = ''; unmountForm(); return; }
+  fl.style.height = fl.offsetHeight + 'px';
+  requestAnimationFrame(() => { el.classList.remove('fl'); fl.style.height = (fl.offsetWidth / 1.586) + 'px'; });
+  setTimeout(() => { if(!el.classList.contains('fl')){ fl.style.height = ''; unmountForm(); } }, 580);
+}
+if(window.ResizeObserver) new ResizeObserver(() => { const el = shownFl && slotOf(shownEx); if(el && el.classList.contains('fl')) sizeBack(el); }).observe($('#fbody'));
+function brightness(on){ try{ if(NAT) NAT.setBrightness({value: on ? 1 : -1}); }catch(e){} }
 
 /* ---------- codici ---------- */
 function guess(v){
@@ -466,22 +607,6 @@ function drawCode(box, value, format){
   return false;
 }
 
-/* ---------- dettaglio ---------- */
-function openCard(id){
-  const c = cards.find(x => x.id === id); if(!c) return;
-  current = c; c.uses = (c.uses||0) + 1; save();
-  const head = $('#d-card');
-  head.setAttribute('style', cardStyle(c));
-  head.className = 'bigcard' + faceClass(c);
-  head.querySelectorAll('.flogo').forEach(x => x.remove());
-  head.insertAdjacentHTML('afterbegin', faceTag(c));
-  $('#d-name').textContent = c.name;
-  drawCode($('#d-code'), c.number, c.format);
-  $('#d-box').classList.toggle('qr', c.format === 'QR');
-  $('#d-num').textContent = group(c.number);
-  openSheet('#detail'); keepAwake();
-}
-$('#d-edit').addEventListener('click', () => { release(); openForm(current); });
 async function keepAwake(){ try{ if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
 function release(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
 
@@ -509,7 +634,7 @@ function preview(){
   if(!n){ box.innerHTML = '<p class="hint">Qui vedrai l’anteprima del codice.</p>'; box.classList.remove('qr'); return; }
   drawCode(box, n, $('#f-fmt').value);
 }
-function openForm(c){
+function fillForm(c){
   editing = c || null; delArmed = false;
   $('#f-title').textContent = c ? 'Modifica tessera' : 'Nuova tessera';
   $('#f-name').value = c ? c.name : '';
@@ -521,9 +646,17 @@ function openForm(c){
   formLogo = c ? (c.logo || null) : null;
   formFit = c ? (c.fit || 'contain') : 'contain';
   pickColor(c ? c.color : COLORS[cards.length % COLORS.length]);
+  formStar = !!(c && c.star); paintStar();
   const del = $('#f-del'); del.hidden = !c; del.textContent = 'Elimina tessera';
-  preview(); openSheet('#form');
+  preview();
 }
+function openForm(c){ unmountForm(); fillForm(c); openSheet('#form'); }
+function paintStar(){ const b = $('#f-star'); b.textContent = formStar ? '★ Nel widget' : '☆ Metti nel widget'; b.setAttribute('aria-pressed', formStar); }
+$('#f-star').addEventListener('click', () => {
+  if(!formStar && cards.filter(x => x.star && x !== editing).length >= 4){ toast('Il widget ne mostra quattro: togli prima una stellina'); return; }
+  formStar = !formStar; paintStar();
+});
+$('#f-cancel').addEventListener('click', goBack);
 $('#f-num').addEventListener('input', preview);
 $('#f-name').addEventListener('input', () => { if(siteAuto){ $('#f-site').value = guessSite($('#f-name').value); paintThumb(); } });
 let siteT; $('#f-site').addEventListener('input', () => { siteAuto = !$('#f-site').value; clearTimeout(siteT); siteT = setTimeout(paintThumb, 500); });
@@ -551,24 +684,46 @@ async function searchLogos(q){
   grid.innerHTML = ''; st.textContent = 'Cerco i loghi…';
   if(!navigator.onLine){ st.textContent = 'Serve la connessione per cercare i loghi.'; return; }
   const seen = new Set();
-  const add = (url, src) => {
+  /* ogni proposta compare solo quando l'immagine è arrivata, in ordine di qualità */
+  const add = (url, src, opt) => {
+    opt = opt || {};
     if(!url || seen.has(url) || run !== searchRun) return;
     seen.add(url);
     const b = document.createElement('button');
-    b.className = 'ltile'; b.setAttribute('aria-label', 'Logo da ' + src);
+    b.className = 'ltile'; b.hidden = true; b.dataset.score = '-1'; b.setAttribute('aria-label', 'Logo da ' + src);
     b.innerHTML = '<img alt=""><span>' + esc(src) + '</span>';
     const im = b.querySelector('img');
     im.onerror = () => b.remove();
-    im.onload = () => { if(im.naturalWidth < 48) b.remove(); };
+    im.onload = () => {
+      if(run !== searchRun) return;
+      const w = im.naturalWidth, h = im.naturalHeight, svg = /\.svg(\?|$)/i.test(url);
+      if(!svg && Math.max(w, h) < 128) return b.remove();
+      const score = (opt.prio || 0) * 100000 + (svg ? 4096 : Math.min(w, h));
+      b.dataset.score = score;
+      if(svg || Math.min(w, h) >= 256) b.insertAdjacentHTML('beforeend', '<em class="hd">HD</em>');
+      const next = [...grid.children].find(x => x !== b && !x.hidden && +x.dataset.score < score);
+      grid.insertBefore(b, next || null); b.hidden = false;
+      st.textContent = 'Tocca il logo che preferisci. Prima i più nitidi.';
+    };
     im.src = url;
-    b.addEventListener('click', () => chooseLogo(url));
+    b.addEventListener('click', () => chooseLogo(url, opt));
     grid.appendChild(b);
   };
+  const bf = (d, t) => 'https://cdn.brandfetch.io/domain/' + encodeURIComponent(d) + '/w/1024/h/1024/fallback/404/' + t + '?c=' + BF;
+  const bfDomain = d => { if(!d || bfSeen.has(d)) return; bfSeen.add(d); ['logo','icon','symbol'].forEach(t => add(bf(d, t), 'Brandfetch', {prio:3, hot:true})); };
+  const bfSeen = new Set();
   const domains = new Set();
   const site = cleanSite($('#f-site').value) || guessSite(q);
   if(site) domains.add(site);
   const enc = encodeURIComponent;
-  const fileUrl = f => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + enc(f.replace(/ /g,'_')) + '?width=500';
+  const fileUrl = f => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + enc(f.replace(/ /g,'_')) + '?width=1000';
+  if(site) bfDomain(site);
+  const brand = (async () => {
+    const r = await fetch('https://api.brandfetch.io/v2/search/' + enc(q) + '?c=' + BF);
+    if(!r.ok) return;
+    const j = await r.json();
+    (Array.isArray(j) ? j : []).slice(0, 3).forEach(x => { if(x && x.domain){ bfDomain(x.domain); domains.add(cleanSite(x.domain)); } });
+  })();
 
   const wikidata = (async () => {
     const j = await (await fetch(WD+'?action=wbsearchentities&search='+enc(q)+'&language=it&uselang=it&type=item&limit=6&format=json&origin=*')).json();
@@ -576,33 +731,82 @@ async function searchLogos(q){
     const j2 = await (await fetch(WD+'?action=wbgetentities&ids='+ids.join('|')+'&props=claims&format=json&origin=*')).json();
     for(const id of ids){
       const cl = (j2.entities && j2.entities[id] && j2.entities[id].claims) || {};
-      for(const p of ['P154','P8972']) (cl[p] || []).forEach(x => { const f = x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value; if(f) add(fileUrl(f), 'Wikidata'); });
+      for(const p of ['P154','P8972']) (cl[p] || []).forEach(x => { const f = x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value; if(f) add(fileUrl(f), 'Wikidata', {prio:2}); });
       (cl.P856 || []).slice(0,1).forEach(x => { const u = x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value; if(u) domains.add(cleanSite(u)); });
     }
   })();
   const commons = (async () => {
-    const j = await (await fetch(CM+'?action=query&generator=search&gsrsearch='+enc(q+' logo')+'&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*')).json();
+    const j = await (await fetch(CM+'?action=query&generator=search&gsrsearch='+enc(q+' logo')+'&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url&iiurlwidth=1000&format=json&origin=*')).json();
     const pages = Object.values((j.query && j.query.pages) || {}).sort((a,b) => (a.index||0) - (b.index||0));
     pages.forEach(p => { const ii = p.imageinfo && p.imageinfo[0]; if(ii && (ii.thumburl || ii.url)) add(ii.thumburl || ii.url, 'Commons'); });
   })();
-  await Promise.allSettled([wikidata, commons]);
+  await Promise.allSettled([wikidata, commons, brand]);
   if(run !== searchRun) return;
   for(const d of domains){
     if(!d) continue;
+    bfDomain(d);
+    siteIcons(d, add);
+    add('https://' + d + '/apple-touch-icon.png', 'Sito', {prio:1});
     add('https://icon.horse/icon/' + d, 'Icona sito');
     add('https://www.google.com/s2/favicons?domain=' + enc(d) + '&sz=256', 'Google');
-    add('https://' + d + '/apple-touch-icon.png', 'Sito');
   }
-  st.textContent = 'Tocca il logo che preferisci.';
-  setTimeout(() => { if(run === searchRun && !grid.children.length) st.textContent = 'Nessun logo trovato. Prova con un altro nome, oppure scrivi il sito del negozio nella tessera.'; }, 4000);
+  setTimeout(() => { if(run === searchRun && ![...grid.children].some(x => !x.hidden)) st.textContent = 'Nessun logo trovato. Prova con un altro nome, oppure scrivi il sito del negozio nella tessera.'; }, 5000);
 }
-async function chooseLogo(url){
-  toast('Salvo il logo…');
-  const data = await logoToData(url);
+/* icone grandi dichiarate dal sito (per le app, per iPhone, manifest): lette dall'app nativa, senza blocchi */
+async function siteIcons(d, add){
+  const H = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.CapacitorHttp; if(!H) return;
+  const base = 'https://' + d + '/';
+  try{
+    const r = await H.request({url:base, method:'GET', responseType:'text'});
+    if(!(r.status >= 200 && r.status < 400) || typeof r.data !== 'string') return;
+    const doc = new DOMParser().parseFromString(r.data, 'text/html'), from = r.url || base;
+    const abs = (h, b) => { try{ return new URL(h, b || from).href; }catch(e){ return null; } };
+    doc.querySelectorAll('link[rel]').forEach(l => {
+      const rel = (l.getAttribute('rel') || '').toLowerCase(); if(!/icon/.test(rel)) return;
+      const sz = (l.getAttribute('sizes') || '').toLowerCase(), n = parseInt(sz) || 0, href = l.getAttribute('href') || '';
+      if(n >= 128 || sz === 'any' || /\.svg/i.test(href) || /apple-touch/.test(rel)) add(abs(href), 'Sito', {prio:1});
+    });
+    const mf = doc.querySelector('link[rel="manifest"]');
+    if(mf){
+      const mu = abs(mf.getAttribute('href'));
+      const m = await H.request({url:mu, method:'GET', responseType:'text'});
+      let j = m.data; if(typeof j === 'string'){ try{ j = JSON.parse(j); }catch(e){ j = null; } }
+      ((j && j.icons) || []).forEach(i => { if((parseInt(i.sizes) || 0) >= 192) add(abs(i.src, mu), 'App del sito', {prio:1}); });
+    }
+  }catch(e){}
+}
+async function chooseLogo(url, opt){
+  opt = opt || {};
+  let data = null;
+  if(!opt.hot){ toast('Salvo il logo…'); data = await logoToData(url); }
   formLogo = data || url; formFit = 'contain'; faceImg = null;
-  pickColor('#FFFFFF');
+  pickColor((data && await edgeColor(data)) || '#FFFFFF');
   goBack();
-  toast(data ? 'Logo salvato, visibile anche offline' : 'Logo scelto (servirà la rete per vederlo)');
+  toast(opt.hot ? 'Logo Brandfetch: si vede quando c’è rete' : data ? 'Logo salvato, visibile anche offline' : 'Logo scelto (servirà la rete per vederlo)');
+}
+/* colore dei bordi del logo: così la tessera sembra stampata tutta del suo colore */
+function edgeColor(src){
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      try{
+        const N = 48, cv = document.createElement('canvas'); cv.width = cv.height = N;
+        const g = cv.getContext('2d'); g.drawImage(img, 0, 0, N, N);
+        const d = g.getImageData(0, 0, N, N).data;
+        let r = 0, gg = 0, b = 0, k = 0, tot = 0, lum = 0, op = 0;
+        for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
+          const i = (y*N + x)*4, a = d[i+3];
+          if(a > 200){ lum += (0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]) / 255; op++; }
+          if(x && y && x < N-1 && y < N-1) continue;
+          tot++; if(a > 200){ r += d[i]; gg += d[i+1]; b += d[i+2]; k++; }
+        }
+        if(k / tot > .7){ const h = v => Math.round(v / k).toString(16).padStart(2, '0'); return res(('#' + h(r) + h(gg) + h(b)).toUpperCase()); }
+        res(op && lum / op > .85 ? '#1A1E26' : '#FFFFFF');
+      }catch(e){ res(null); }
+    };
+    img.onerror = () => res(null);
+    img.src = src;
+  });
 }
 /* scarica il logo una volta e lo tiene dentro la tessera come immagine */
 async function logoToData(url){
@@ -627,7 +831,7 @@ async function logoToData(url){
   return await new Promise(res => {
     const img = new Image();
     img.onload = () => {
-      const m = 512, k = Math.min(1, m / Math.max(img.width, img.height));
+      const m = 768, k = Math.min(1, m / Math.max(img.width, img.height));
       const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(img.width*k)); cv.height = Math.max(1, Math.round(img.height*k));
       cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
       try{ res(cv.toDataURL('image/png')); }catch(e){ res(raw); }
@@ -641,7 +845,7 @@ async function migrateLogos(){
   if(!navigator.onLine) return;
   let changed = false;
   for(const c of cards){
-    if(c.logo && /^https?:/.test(c.logo)){ const d = await logoToData(c.logo); if(d){ c.logo = d; changed = true; } }
+    if(c.logo && /^https?:/.test(c.logo) && !/cdn\.brandfetch\.io/.test(c.logo)){ const d = await logoToData(c.logo); if(d){ c.logo = d; changed = true; } }
   }
   if(changed){ save(); render(); }
 }
@@ -668,17 +872,23 @@ $('#f-save').addEventListener('click', () => {
   const name = $('#f-name').value.trim(), number = cleanNum(), format = $('#f-fmt').value;
   if(!name){ toast('Scrivi il nome del negozio'); $('#f-name').focus(); return; }
   if(!number){ toast('Manca il numero della tessera'); $('#f-num').focus(); return; }
-  const data = {name, number, format, color, img:faceImg || null, logo:formLogo || null, fit:formFit, site:cleanSite($('#f-site').value)};
+  const data = {name, number, format, color, img:faceImg || null, logo:formLogo || null, fit:formFit, site:cleanSite($('#f-site').value), star:formStar};
   let added = null;
   if(editing) Object.assign(editing, data);
   else { added = Object.assign({id:uid(), uses:0}, data); cards.push(added); }
   if(!save()){ if(added) cards = cards.filter(x => x !== added); return; }
-  closeSheets(); toast('Tessera salvata');
+  dirty = true; queueWidget();
+  if(editing && shownFl && shownEx === editing.id){ refreshSlot(editing); goBack(); }
+  else closeSheets();
+  toast('Tessera salvata');
 });
 $('#f-del').addEventListener('click', () => {
   if(!editing) return;
   if(!delArmed){ delArmed = true; $('#f-del').textContent = 'Tocca di nuovo per eliminare'; return; }
-  cards = cards.filter(x => x.id !== editing.id); save(); closeSheets(); toast('Tessera eliminata');
+  const id = editing.id;
+  cards = cards.filter(x => x.id !== id); save(); queueWidget();
+  if(shownEx === id){ const el = slotOf(id); if(el) flipClose(el, true); shownEx = null; shownFl = false; brightness(false); release(); }
+  dirty = true; closeSheets(); toast('Tessera eliminata');
 });
 
 /* ---------- scansione ---------- */
@@ -776,7 +986,7 @@ $('#photo').addEventListener('change', async e => {
 
 /* ---------- backup ---------- */
 $('#b-copy').addEventListener('click', async () => {
-  const data = JSON.stringify(cards.map(({name,number,format,color,img,site,logo,fit}) => ({name,number,format,color,img,site,logo,fit})));
+  const data = JSON.stringify(cards.map(({name,number,format,color,img,site,logo,fit,star}) => ({name,number,format,color,img,site,logo,fit,star})));
   try{ await navigator.clipboard.writeText(data); toast('Backup copiato'); }
   catch(e){ const t = $('#b-text'); t.value = data; t.select(); toast('Testo selezionato: copialo a mano'); }
 });
@@ -790,15 +1000,15 @@ $('#b-import').addEventListener('click', () => {
     const num = String(c.number).replace(/\s+/g,'');
     if(cards.some(x => x.number === num && x.name === c.name)) continue;
     const img = typeof c.img === 'string' && c.img.startsWith('data:image/') ? c.img : null;
-    cards.push({id:uid(), name:String(c.name), number:num, format:c.format || 'AUTO', site:cleanSite(String(c.site || '')), logo:(typeof c.logo === 'string' && (c.logo.startsWith('https://') || c.logo.startsWith('data:image/'))) ? c.logo : null, fit:c.fit === 'cover' ? 'cover' : 'contain', color:/^#[0-9A-Fa-f]{6}$/.test(c.color||'') ? c.color : COLORS[0], img, uses:0});
+    cards.push({id:uid(), name:String(c.name), number:num, format:c.format || 'AUTO', site:cleanSite(String(c.site || '')), logo:(typeof c.logo === 'string' && (c.logo.startsWith('https://') || c.logo.startsWith('data:image/'))) ? c.logo : null, fit:c.fit === 'cover' ? 'cover' : 'contain', color:/^#[0-9A-Fa-f]{6}$/.test(c.color||'') ? c.color : COLORS[0], img, star:!!c.star && cards.filter(x => x.star).length < 4, uses:0});
     n++;
   }
-  save(); $('#b-text').value = ''; closeSheets();
+  save(); queueWidget(); dirty = true; $('#b-text').value = ''; closeSheets();
   toast(n ? (n === 1 ? 'Importata 1 tessera' : 'Importate ' + n + ' tessere') : 'Nessuna tessera nuova da importare');
 });
 
 /* ---------- versione e aggiornamenti ---------- */
-const APP_VERSION = '2.0';   // cambia solo questo numero a ogni aggiornamento
+const APP_VERSION = '2.1';   // cambia solo questo numero a ogni aggiornamento
 const REPO = 'wolve666/Carrds';
 $('#ver').textContent = 'v' + APP_VERSION;
 $('#upd-cur').textContent = 'v' + APP_VERSION;
@@ -820,14 +1030,81 @@ async function checkUpdate(quiet){
 $('#ver').addEventListener('click', () => checkUpdate(false));
 $('#b-update').addEventListener('click', () => checkUpdate(false));
 
+/* ---------- widget ---------- */
+let wT; function queueWidget(){ clearTimeout(wT); wT = setTimeout(syncWidget, 400); }
+function loadImg(src){ return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+/* disegna la mini tessera come immagine: il widget di Android mostra solo immagini */
+async function widgetImage(c){
+  const W = 480, H = 302, R = 30, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  try{ await document.fonts.load('800 28px "Bricolage Grotesque"'); }catch(e){}
+  g.beginPath(); g.moveTo(R,0); g.arcTo(W,0,W,H,R); g.arcTo(W,H,0,H,R); g.arcTo(0,H,0,0,R); g.arcTo(0,0,W,0,R); g.closePath(); g.clip();
+  g.fillStyle = c.color || '#FFFFFF'; g.fillRect(0, 0, W, H);
+  let pic = false;
+  const src = c.img || (c.logo && c.logo.startsWith('data:') ? c.logo : null);
+  const im = src ? await loadImg(src) : null;
+  if(im){
+    const cover = !!c.img || c.fit === 'cover';
+    const bx = cover ? 0 : W*.09, by = cover ? 0 : H*.09, bw = cover ? W : W*.82, bh = cover ? H : H*.82;
+    const k = (cover ? Math.max : Math.min)(bw / im.width, bh / im.height), w = im.width*k, h = im.height*k;
+    g.drawImage(im, bx + (bw-w)/2, by + (bh-h)/2, w, h); pic = true;
+  }
+  if(pic){
+    g.font = '800 26px "Bricolage Grotesque", sans-serif';
+    let t = c.name; while(g.measureText(t).width > W*.62 && t.length > 3) t = t.slice(0, -2);
+    if(t !== c.name) t = t.trim() + '…';
+    const tw = g.measureText(t).width, pw = tw + 30, ph = 42, px = W - pw - 14, py = 14;
+    g.fillStyle = 'rgba(10,10,14,.62)'; g.beginPath(); g.roundRect(px, py, pw, ph, ph/2); g.fill();
+    g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(t, px + 15, py + ph/2 + 1);
+  }else{
+    g.fillStyle = textOn(c.color || '#FFFFFF'); g.font = '800 44px "Bricolage Grotesque", sans-serif'; g.textBaseline = 'alphabetic';
+    let t = c.name; while(g.measureText(t).width > W - 48 && t.length > 3) t = t.slice(0, -2);
+    g.fillText(t, 24, H - 28);
+  }
+  try{ return cv.toDataURL('image/png').split(',')[1]; }catch(e){ return null; }
+}
+async function syncWidget(){
+  if(!NAT) return;
+  const out = [];
+  for(const c of cards.filter(x => x.star).slice(0, 4)){ const png = await widgetImage(c); if(png) out.push({id:c.id, png}); }
+  try{ await NAT.setWidgetCards({cards:out}); }catch(e){}
+}
+$('#b-widget').hidden = !NAT;
+$('#b-widget').addEventListener('click', async () => {
+  try{ const r = await NAT.pinWidget(); if(r && r.ok) return; }catch(e){}
+  toast('Tieni premuto sulla Home → Widget → Carrds');
+});
+/* tocco su una mini tessera del widget: Carrds si apre direttamente su quella tessera */
+let lastUrl = '', lastAt = 0;
+function openFromUrl(url){
+  const m = /^carrds:\/\/card\/(.+)$/.exec(url || ''); if(!m) return false;
+  if(url === lastUrl && Date.now() - lastAt < 1500) return true;
+  lastUrl = url; lastAt = Date.now();
+  const id = decodeURIComponent(m[1]); if(!cards.some(c => c.id === id)) return false;
+  if(st().ex === id && !st().fl && !st().sheet) return true;
+  pendingOpen = id;
+  if(depth() > 0) closeSheets(); else applyState(null);
+  return true;
+}
+
 /* tasto indietro di Android */
 const CapApp = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App;
 if(CapApp) CapApp.addListener('backButton', () => { if(depth() > 0) history.back(); else CapApp.exitApp(); });
 
-setTimeout(() => { migrateLogos(); checkUpdate(true); }, 1500);
+if(CapApp) CapApp.addListener('appUrlOpen', e => openFromUrl(e && e.url));
+setTimeout(() => { migrateLogos(); checkUpdate(true); syncWidget(); }, 1500);
 
 render();
-requestAnimationFrame(dealIn);
+(async () => {
+  let opened = false;
+  try{
+    if(CapApp){
+      const r = await Promise.race([CapApp.getLaunchUrl(), new Promise(ok => setTimeout(() => ok(null), 400))]);
+      if(r && r.url) opened = openFromUrl(r.url);
+    }
+  }catch(e){}
+  if(!opened) requestAnimationFrame(dealIn);
+})();
 </script>
 </body>
 </html>
