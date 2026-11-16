@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versione-2.0-D7263D" alt="Versione 2.0">
+  <img src="https://img.shields.io/badge/versione-2.1-D7263D" alt="Versione 2.1">
   <img src="https://img.shields.io/badge/Android-APK-46AAF5" alt="App Android">
   <img src="https://img.shields.io/badge/funziona-offline-2E9E5B" alt="Funziona offline">
   <img src="https://img.shields.io/badge/dati-solo%20sul%20telefono-3A3F4B" alt="Dati solo sul telefono">
@@ -49,6 +49,8 @@
 
 ### Portafoglio
 - Griglia a due colonne con tutte le tessere visibili subito, a scorrimento verticale.
+- **Tocchi una tessera e si allarga**: le altre scorrono giù e sotto compare il codice a barre.
+- **La tocchi di nuovo e si gira**: sul retro modifichi numero, logo, colore e stellina del widget.
 - Le tessere più usate salgono in cima da sole.
 - Ricerca per nome quando le tessere sono più di quattro.
 - Animazione di apertura: le tessere si impilano una sull’altra e poi si distribuiscono nella griglia.
@@ -56,7 +58,7 @@
 ### Alla cassa
 - Codice a barre grande su sfondo bianco, sempre leggibile dagli scanner anche con il tema scuro.
 - Numero della tessera mostrato in chiaro sotto il codice.
-- Schermo tenuto acceso finché la tessera resta aperta.
+- Schermo tenuto acceso e **luminosità al massimo** finché la tessera resta aperta.
 
 ### Aggiunta delle tessere
 - **Scansione dal vivo** con la fotocamera.
@@ -65,18 +67,20 @@
 - Anteprima del codice in tempo reale mentre si compila.
 
 ### Aspetto delle tessere
-- **Logo a tutta tessera**, intero oppure a riempimento completo.
+- **Logo a tutta tessera**, con il nome del negozio in alto a destra, sempre leggibile.
+- Il colore della tessera si prende in automatico dai bordi del logo.
 - **Ricerca loghi** integrata su più fonti (vedi [Ricerca dei loghi](#ricerca-dei-loghi)).
 - **Foto del fronte** della tessera vera, ritagliata in automatico alle proporzioni di una carta.
 - Dieci colori di sfondo, bianco compreso, per le tessere senza logo.
 - Sito compilato in automatico per una cinquantina di catene italiane.
 
 ### App
-- Due temi: **rosso su bianco** (predefinito) e **nero con il rosso**.
+- Tre temi: **Rosso** (predefinito), **Notte** e **Portafoglio**, ispirato all’icona.
 - Sfondo decorato con carrelli, shopper e regali a linea sottile.
 - App Android vera (APK), **indipendente dalla rete**: librerie, font e loghi sono dentro l’app.
 - I loghi scelti vengono salvati dentro la tessera e restano visibili offline.
 - **Tasto indietro** del telefono collegato a tutte le schermate.
+- **Widget per la Home** con le tessere segnate dalla stellina ★ (fino a quattro): un tocco apre direttamente il codice.
 - Versione corrente accanto al nome: toccandola **verifica gli aggiornamenti** e scarica la nuova APK.
 
 ---
@@ -98,9 +102,11 @@ Per spostare le tessere dalla vecchia versione web: **⋯ → Copia backup** lì
 |---|---|
 | Aggiungere una tessera | Tasto **+** → inquadra il codice, oppure leggilo da una foto, oppure scrivi il numero |
 | Scegliere il logo | Nel modulo → **Cerca logo** → tocca quello che preferisci |
-| Mostrarla alla cassa | Tocca la tessera nella griglia |
-| Modificarla o eliminarla | Apri la tessera → **Modifica** |
-| Cambiare tema | Tasto con il cerchio a metà, in alto |
+| Mostrarla alla cassa | Tocca la tessera: si allarga e mostra il codice |
+| Modificarla o eliminarla | Con la tessera aperta, toccala di nuovo: si gira |
+| Metterla nel widget | Sul retro → **☆ Metti nel widget** |
+| Aggiungere il widget | **⋯ → Aggiungi widget alla Home** |
+| Cambiare tema | Tasto con il cerchio a metà, in alto: Rosso, Notte, Portafoglio |
 | Backup e aggiornamenti | Tasto **⋯**, in alto |
 | Verificare gli aggiornamenti | Tocca la versione accanto al nome |
 | Tornare indietro | Tasto o gesto indietro del telefono |
@@ -132,11 +138,14 @@ La ricerca interroga più fonti in parallelo e mostra i risultati in una griglia
 
 | Fonte | Cosa trova | Qualità |
 |---|---|---|
+| **Brandfetch** | Logo, icona e simbolo del marchio a 1024 px | Altissima |
 | **Wikidata** | Il logo ufficiale registrato per l’azienda, più il suo sito | Alta, spesso vettoriale |
 | **Wikimedia Commons** | Varianti e versioni storiche del logo | Alta |
-| **Icone del sito** | Le icone pubblicate dal sito del negozio | Media |
+| **Icone del sito** | Le icone grandi dichiarate dal sito e dalla sua app web | Media-alta |
 
-- Il logo scelto viene scaricato una volta e salvato **dentro la tessera**: da lì in poi si vede sempre, anche offline.
+- Le proposte compaiono in ordine di nitidezza, con l’etichetta **HD** sulle migliori; quelle troppo piccole vengono scartate.
+- I loghi di Wikidata, Commons e dei siti vengono salvati **dentro la tessera**: si vedono sempre, anche offline.
+- I loghi **Brandfetch** per regolamento non si possono salvare: si caricano dal loro server e si vedono quando c’è rete. Nel widget quelle tessere mostrano colore e nome.
 - La ricerca invece richiede la connessione.
 - Per i negozi piccoli o locali conviene scrivere il sito nel campo apposito. In alternativa, la foto del fronte è sempre la soluzione più affidabile.
 
@@ -171,6 +180,7 @@ Carrds/
 ├── www/
 │   ├── index.html          App completa: interfaccia, stili e logica
 │   └── lib/                Librerie e font inclusi nell’APK
+├── native/                 Codice Android: widget, luminosità, apertura dal widget
 ├── assets/                 Icone sorgente per Android (normale e adattiva)
 ├── .github/workflows/
 │   └── build.yml           Compila, firma e pubblica l’APK
@@ -187,6 +197,8 @@ Carrds/
 |---|---|
 | HTML, CSS e JavaScript puri | Interfaccia senza framework |
 | [Capacitor](https://capacitorjs.com) | Trasforma la pagina in app Android |
+| Codice Android nativo | Widget della Home e luminosità dello schermo |
+| [Brandfetch](https://brandfetch.com) | Loghi dei marchi in alta qualità |
 | [JsBarcode](https://github.com/lindell/JsBarcode) | Disegno dei codici a barre |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | Disegno dei QR code |
 | BarcodeDetector (nativo di Chrome) | Scansione veloce dalla fotocamera |
@@ -201,7 +213,7 @@ Carrds/
 
 1. Modifica i file e cambia il numero nella riga:
    ```js
-   const APP_VERSION = '2.0';   // in www/index.html
+   const APP_VERSION = '2.1';   // in www/index.html
    ```
 2. Carica su GitHub **solo i file cambiati** (quasi sempre `www/index.html`).
 3. GitHub Actions compila l’APK e pubblica la release `v<versione>`.
@@ -224,6 +236,7 @@ La chiave va conservata fuori dal repository: senza, Android non accetta gli agg
 | La fotocamera non si apre | Impostazioni Android → App → Carrds → Autorizzazioni → Fotocamera |
 | Lo scanner della cassa non legge | Alza la luminosità al massimo e tieni il telefono fermo |
 | Un logo non compare | Prova un’altra proposta nella ricerca, oppure usa la foto del fronte |
+| Il widget è vuoto | Metti la stellina ★ sul retro di almeno una tessera |
 | La verifica aggiornamenti non trova nulla | Controlla che la compilazione su GitHub (scheda *Actions*) sia finita in verde |
 
 ---
@@ -232,6 +245,7 @@ La chiave va conservata fuori dal repository: senza, Android non accetta gli agg
 
 | Versione | Novità |
 |---|---|
+| **2.1** | Tessere che si allargano e si girano, nome sul logo, tre temi (nuovo Portafoglio), widget con stelline, luminosità al massimo, loghi HD con Brandfetch e icone dei siti |
 | **2.0** | App Android (APK) indipendente dalla rete: librerie e font inclusi, loghi salvati dentro le tessere, verifica aggiornamenti dalle release |
 | **1.5** | Tasto indietro del telefono collegato a tutte le schermate |
 | **1.4** | Logo a tutta tessera, ricerca loghi su Wikidata, Commons e siti, sfondo bianco |
