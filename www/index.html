@@ -2,6 +2,29 @@
 <html lang="it" data-theme="light">
 <head>
 <meta charset="utf-8">
+<script>
+// versione dell'app e della parte Android (APPN si alza solo quando cambiano native/, build.yml o i permessi)
+var APPV = '2.3', APPN = 1;
+// aggiornamenti in app: se è stata scaricata una versione più nuova e compatibile, parte quella al posto di questa
+(function(){
+  if(window.__LIVE) return;
+  window.BUNDLEV = APPV; window.BUNDLEN = APPN;
+  try{
+    var L = localStorage, h = L.getItem('carrds-live'), v = L.getItem('carrds-livever'), n = +L.getItem('carrds-liven') || 1;
+    var newer = function(a, b){ a = a.split('.'); b = b.split('.'); for(var i = 0; i < 3; i++){ if((+a[i]||0) !== (+b[i]||0)) return (+a[i]||0) > (+b[i]||0); } return false; };
+    if(!h || !v) return;
+    if(!newer(v, APPV) || n > APPN || L.getItem('carrds-liveok') === '0'){
+      // superata dall'APK, incompatibile o andata in errore all'avvio precedente: la scarto
+      if(L.getItem('carrds-liveok') === '0') L.setItem('carrds-livefail', v);
+      ['carrds-live','carrds-livever','carrds-liven','carrds-liveok'].forEach(function(k){ L.removeItem(k); });
+      return;
+    }
+    L.setItem('carrds-liveok', '0');
+    window.__LIVE = v;
+    document.write(h + '<plaintext style="display:none">');
+  }catch(e){}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Carrds</title>
 <meta name="theme-color" content="#FFFFFF">
@@ -80,31 +103,35 @@ h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;margin:0;flex:1;line-h
 .wallet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
 .slot{position:relative;min-width:0}
 .slot.ex{grid-column:1/-1}
-.flipper{position:relative;aspect-ratio:1.586;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1),height .35s ease}
-.slot.fl .flipper{transform:rotateY(180deg);aspect-ratio:auto}
-.slot.snap .flipper{transition:none}
-.slot.flat .flipper{transform:none;transition:none}
-.slot.flat .front{visibility:hidden}
-.slot.flat .back{transform:none}
+.flipper{position:relative;aspect-ratio:1.586;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.3,.7,.2,1);will-change:transform}
+.slot.fl .flipper{transform:rotateY(180deg)}
 .side{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden}
-.back{transform:rotateY(180deg);border-radius:16px;background:var(--surface);border:1.5px solid var(--red);
-  box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 18px var(--halo);padding:1rem;overflow:hidden;visibility:hidden}
+.back{transform:rotateY(180deg);border-radius:14px;background:var(--surface);border:1.5px solid var(--red);color:var(--ink);
+  box-shadow:0 8px 24px rgba(0,0,0,.2);padding:.8rem .9rem;display:flex;flex-direction:column;gap:.5rem;overflow:hidden;visibility:hidden}
 .slot.fl .back{visibility:visible}
-.back #fbody>.row:first-child{margin-top:0}
-.back #f-prev{display:none}
-#f-cancel{display:none}
-.back #f-cancel{display:block}
+.bh{display:flex;align-items:center;gap:.5rem}
+.bh b{flex:1;font-size:1.15rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bnum{font-variant-numeric:tabular-nums;letter-spacing:.05em;color:var(--muted);font-size:.9rem;margin-top:-.3rem}
+.bsw{display:flex;flex-wrap:wrap;gap:.45rem;padding:3px}
+.bsw button{width:1.6rem;height:1.6rem;border-radius:50%;border:1.5px solid var(--red-soft);background:var(--c);flex:none;padding:0}
+.bsw button[aria-pressed="true"]{outline:2px solid var(--red);outline-offset:2px}
+.bbtn{display:flex;gap:.5rem;margin-top:auto}
+.bbtn .btn{padding:.65rem .4rem;font-size:.86rem;border-radius:12px}
+.bicon{width:2.4rem;height:2.4rem;border-radius:50%;border:1.5px solid var(--red-soft);background:transparent;font-size:1.15rem;line-height:1;flex:none;padding:0;color:var(--red)}
+.bicon.on{background:#FFF3C4;border-color:#E0A800;color:#C98A00}
+.chk{display:flex;gap:.7rem;align-items:center;font-weight:600;margin-top:1rem}
+.chk input{width:1.4rem;height:1.4rem;accent-color:var(--red);flex:none}
 .codep{display:none;position:relative;z-index:2}
-.slot.ex .codep{display:block;animation:slide .35s .12s cubic-bezier(.2,.8,.2,1) both}
+.slot.ex .codep{display:block;animation:slide .3s .25s ease-out both}
 .slot.fl .codep{display:none}
-@keyframes slide{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes slide{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .chint{text-align:center}
 .tag{display:none;position:absolute;top:.45rem;right:.45rem;max-width:72%;font-weight:800;font-size:.74rem;line-height:1.15;letter-spacing:.01em;
-  color:#fff;background:rgba(10,10,14,.58);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:.24rem .55rem;border-radius:999px;
+  color:#fff;background:rgba(10,10,14,.62);padding:.24rem .55rem;border-radius:999px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.3);z-index:1}
 .haslogo .tag,.photo .tag{display:block}
 .slot.ex .tag{font-size:1rem;top:.75rem;right:.75rem;padding:.38rem .8rem}
-.star{position:absolute;left:.45rem;bottom:.35rem;font-size:.85rem;color:#FFD36A;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:1}
+.star{position:absolute;left:.5rem;top:.4rem;font-size:.85rem;color:#FFD36A;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:1}
 .hd{position:absolute;top:.3rem;right:.3rem;font:800 .62rem/1 inherit;font-style:normal;background:#2E9E5B;color:#fff;padding:.18rem .35rem;border-radius:6px}
 .card{appearance:none;border:0;padding:0;text-align:left;width:100%;aspect-ratio:1.586;
   border-radius:14px;background-color:var(--c);background-size:cover;background-position:center;color:var(--t);
@@ -187,6 +214,14 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
   background:var(--red);color:var(--on-red);padding:.7rem 1.1rem;border-radius:999px;font-weight:600;
   box-shadow:0 0 20px var(--halo);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:90vw;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+.ver.upd{background:var(--red);color:var(--on-red);border-color:var(--red)}
+#updBar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 1rem);transform:translate(-50%,160%);width:min(92vw,26rem);
+  display:flex;gap:.5rem;align-items:center;background:var(--surface);color:var(--ink);border:1.5px solid var(--red);border-radius:16px;
+  padding:.6rem .6rem .6rem 1rem;box-shadow:0 8px 24px rgba(0,0,0,.25),0 0 18px var(--halo);z-index:60;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+#updBar.show{transform:translate(-50%,0)}
+#updBar span{flex:1;font-weight:600;font-size:.92rem}
+#updBar button{border-radius:10px;padding:.55rem .8rem;border:1.5px solid var(--red-soft);background:transparent;font-weight:600;color:var(--ink)}
+#updBar .go{background:var(--red);color:var(--on-red);border-color:var(--red)}
 
 @media (prefers-reduced-motion: reduce){.sheet{animation:none}.card,.btn,.round,.flipper{transition:none}.slot.ex .codep{animation:none}}
 </style>
@@ -282,7 +317,6 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
     <div class="row"><button class="btn" id="f-star" aria-pressed="false">☆ Metti nel widget</button></div>
     <div class="codebox" id="f-prev"></div>
     <div class="row"><button class="btn primary" id="f-save">Salva tessera</button></div>
-    <div class="row"><button class="btn quiet" id="f-cancel">Gira senza salvare</button></div>
     <div class="row"><button class="btn quiet" id="f-del" hidden>Elimina tessera</button></div>
     </div>
   </div>
@@ -319,6 +353,8 @@ textarea{min-height:8rem;font-size:.85rem;resize:vertical}
     <span class="lbl" style="margin-top:2rem">Widget</span>
     <p class="hint">Il widget mostra le tessere con la stellina ★ (fino a quattro). La stellina si mette sul retro della tessera.</p>
     <div class="row"><button class="btn" id="b-widget">Aggiungi widget alla Home</button></div>
+    <span class="lbl" style="margin-top:2rem">Schermo</span>
+    <label class="chk"><input type="checkbox" id="b-bright"> Luminosità al massimo quando mostri il codice</label>
     <span class="lbl" style="margin-top:2rem">Aggiornamenti</span>
     <p class="hint" id="upd-hint">Versione installata: <b id="upd-cur"></b></p>
     <div class="row"><button class="btn primary" id="b-update">Verifica aggiornamenti</button></div>
@@ -411,8 +447,8 @@ function render(){
     '<div class="side back"></div></div><div class="codep"><div class="codebox"><div class="ccode"></div><div class="num"></div></div>' +
     '<p class="hint chint">Tocca la tessera per girarla e modificarla</p><div class="row"><button class="btn quiet" data-act="close">Chiudi</button></div></div></div>').join('');
   const el = slotOf(shownEx);
-  if(el){ el.classList.add('ex'); fillCode(el); if(shownFl){ mountForm(el); el.classList.add('fl','flat'); sizeBack(el); } }
-  else if(shownEx){ unmountForm(); shownEx = null; shownFl = false; brightness(false); }
+  if(el){ el.classList.add('ex'); fillCode(el); if(shownFl){ renderBack(el); el.classList.add('fl'); } }
+  else if(shownEx){ shownEx = null; shownFl = false; brightness(false); }
 }
 function frontHTML(c){
   return '<button class="card side front'+faceClass(c)+'" aria-label="'+esc(c.name)+'" style="'+cardStyle(c)+'">' + faceTag(c) +
@@ -466,6 +502,8 @@ $('#wallet').addEventListener('click', e => {
   if(e.target.closest('[data-act="add"]')) return openForm();
   const el = e.target.closest('.slot'); if(!el) return;
   if(e.target.closest('[data-act="close"]')) return closeSheets();
+  const b = e.target.closest('[data-b]');
+  if(b && el.classList.contains('fl')) return backAction(el, b);
   if(el.classList.contains('fl') || shownFl) return;
   if(!el.classList.contains('ex')) return expandCard(el.dataset.id);
   if(e.target.closest('.front')) pushState({ex:el.dataset.id, fl:true});
@@ -513,34 +551,37 @@ function expandCard(id){
   if(st().ex && !st().fl && !st().sheet){ history.replaceState(Object.assign({}, st(), {ex:id}), ''); applyState(history.state); }
   else pushState({ex:id});
 }
+/* si muovono solo le facce delle tessere (niente codice o testo deformato): più fluido */
 function animateLayout(change){
   const els = [...document.querySelectorAll('.wallet > .slot')];
-  const before = new Map(els.map(e => [e, e.getBoundingClientRect()]));
+  const before = new Map(els.map(e => [e, e.querySelector('.flipper').getBoundingClientRect()]));
   change();
   if(reduce || !Element.prototype.animate) return;
   els.forEach(e => {
-    const a = before.get(e), b = e.getBoundingClientRect();
+    const f = e.querySelector('.flipper'), a = before.get(e), b = f.getBoundingClientRect();
     if(!b.width) return;
     const dx = a.left - b.left, dy = a.top - b.top, k = a.width / b.width;
     if(Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(k - 1) < .01) return;
-    e.animate([{transformOrigin:'0 0', transform:'translate('+dx+'px,'+dy+'px) scale('+k+')'},{transformOrigin:'0 0', transform:'none'}],
-      {duration:480, easing:'cubic-bezier(.2,.8,.2,1)'});
+    if(Math.abs(k - 1) > .01) f.style.zIndex = 5;
+    const an = f.animate([{transformOrigin:'0 0', transform:'translate('+dx+'px,'+dy+'px) scale('+k+')'},{transformOrigin:'0 0', transform:'none'}],
+      {duration:420, easing:'cubic-bezier(.2,.8,.2,1)'});
+    an.onfinish = an.oncancel = () => { f.style.zIndex = ''; };
   });
 }
 function setExpanded(id, fl){
   if(id !== shownEx){
     const old = slotOf(shownEx);
-    if(old && shownFl) flipClose(old, true);
+    if(old) old.classList.remove('fl');
     shownFl = false;
     animateLayout(() => {
-      document.querySelectorAll('.wallet .slot.ex').forEach(x => x.classList.remove('ex','fl','flat'));
+      document.querySelectorAll('.wallet .slot.ex').forEach(x => x.classList.remove('ex','fl'));
       const el = slotOf(id); if(el){ el.classList.add('ex'); fillCode(el); }
     });
     shownEx = id;
     const el = slotOf(id);
     if(el){
       brightness(true); keepAwake();
-      setTimeout(() => { const t = el.getBoundingClientRect().top + scrollY - 90; scrollTo({top:Math.max(0, t), behavior: reduce ? 'auto' : 'smooth'}); }, 60);
+      setTimeout(() => { const r = el.getBoundingClientRect(); if(r.top < 70 || r.bottom > innerHeight - 20) scrollTo({top:Math.max(0, r.top + scrollY - 90), behavior: reduce ? 'auto' : 'smooth'}); }, 430);
     }else{
       brightness(false); release();
       collapsing = true;
@@ -553,31 +594,36 @@ function setExpanded(id, fl){
     shownFl = fl;
   }
 }
-function mountForm(el){ el.querySelector('.back').appendChild($('#fbody')); }
-function unmountForm(){ const f = $('#fbody'), home = $('#form .inner'); if(f.parentNode !== home) home.appendChild(f); }
-function sizeBack(el){
-  const fl = el.querySelector('.flipper'), h = $('#fbody').offsetHeight + 34;
-  fl.style.height = Math.max(fl.offsetWidth / 1.586, h) + 'px';
+/* retro della tessera: solo le cose più utili, il resto con "Modifica tutto" */
+function backHTML(c){
+  return '<div class="bh"><b>'+esc(c.name)+'</b>' +
+    '<button class="bicon'+(c.star?' on':'')+'" data-b="star" aria-pressed="'+!!c.star+'" aria-label="Nel widget">'+(c.star?'★':'☆')+'</button>' +
+    '<button class="bicon" data-b="flip" aria-label="Gira la tessera">↺</button></div>' +
+    '<div class="bnum">'+esc(group(c.number))+'</div>' +
+    '<div class="bsw">' + COLORS.map(k => '<button data-b="color" data-c="'+k+'" style="--c:'+k+'" aria-label="Colore '+k+'" aria-pressed="'+(k===c.color)+'"></button>').join('') + '</div>' +
+    '<div class="bbtn"><button class="btn" data-b="logo">Cerca logo</button><button class="btn primary" data-b="all">Modifica tutto</button></div>';
 }
-function flipOpen(el){
+function renderBack(el){ const c = cards.find(x => x.id === el.dataset.id); if(c) el.querySelector('.back').innerHTML = backHTML(c); }
+function flipOpen(el){ renderBack(el); el.classList.add('fl'); brightness(false); }
+function flipClose(el){ el.classList.remove('fl'); if(shownEx) brightness(true); }
+function backAction(el, b){
   const c = cards.find(x => x.id === el.dataset.id); if(!c) return;
-  fillForm(c); mountForm(el);
-  const fl = el.querySelector('.flipper');
-  fl.style.height = fl.offsetHeight + 'px';
-  el.classList.add('fl');
-  requestAnimationFrame(() => sizeBack(el));
-  setTimeout(() => { if(el.classList.contains('fl')) el.classList.add('flat'); }, 560);
+  const a = b.dataset.b;
+  if(a === 'flip') return goBack();
+  if(a === 'all') return openForm(c);
+  if(a === 'logo'){ fillForm(c); logoTarget = c; return openLogos(c.name); }
+  if(a === 'star'){
+    if(!c.star && cards.filter(x => x.star).length >= 4) return toast('Il widget ne mostra quattro: togli prima una stellina');
+    c.star = !c.star; toast(c.star ? 'Aggiunta al widget' : 'Tolta dal widget');
+  }
+  if(a === 'color') c.color = b.dataset.c;
+  save(); queueWidget(); refreshSlot(c); renderBack(el);
 }
-function flipClose(el, instant){
-  const fl = el.querySelector('.flipper');
-  if(el.classList.contains('flat')){ el.classList.add('snap'); el.classList.remove('flat'); void fl.offsetWidth; el.classList.remove('snap'); }
-  if(instant){ el.classList.remove('fl'); fl.style.height = ''; unmountForm(); return; }
-  fl.style.height = fl.offsetHeight + 'px';
-  requestAnimationFrame(() => { el.classList.remove('fl'); fl.style.height = (fl.offsetWidth / 1.586) + 'px'; });
-  setTimeout(() => { if(!el.classList.contains('fl')){ fl.style.height = ''; unmountForm(); } }, 580);
-}
-if(window.ResizeObserver) new ResizeObserver(() => { const el = shownFl && slotOf(shownEx); if(el && el.classList.contains('fl')) sizeBack(el); }).observe($('#fbody'));
-function brightness(on){ try{ if(NAT) NAT.setBrightness({value: on ? 1 : -1}); }catch(e){} }
+let brightOpt = false;
+try{ brightOpt = localStorage.getItem('carrds.bright') === '1'; }catch(e){}
+$('#b-bright').checked = brightOpt;
+$('#b-bright').addEventListener('change', e => { brightOpt = e.target.checked; try{ localStorage.setItem('carrds.bright', brightOpt ? '1' : '0'); }catch(err){} });
+function brightness(on){ try{ if(NAT) NAT.setBrightness({value: on && brightOpt ? 1 : -1}); }catch(e){} }
 
 /* ---------- codici ---------- */
 function guess(v){
@@ -650,13 +696,13 @@ function fillForm(c){
   const del = $('#f-del'); del.hidden = !c; del.textContent = 'Elimina tessera';
   preview();
 }
-function openForm(c){ unmountForm(); fillForm(c); openSheet('#form'); }
+function openForm(c){ fillForm(c); openSheet('#form'); }
 function paintStar(){ const b = $('#f-star'); b.textContent = formStar ? '★ Nel widget' : '☆ Metti nel widget'; b.setAttribute('aria-pressed', formStar); }
 $('#f-star').addEventListener('click', () => {
   if(!formStar && cards.filter(x => x.star && x !== editing).length >= 4){ toast('Il widget ne mostra quattro: togli prima una stellina'); return; }
   formStar = !formStar; paintStar();
 });
-$('#f-cancel').addEventListener('click', goBack);
+
 $('#f-num').addEventListener('input', preview);
 $('#f-name').addEventListener('input', () => { if(siteAuto){ $('#f-site').value = guessSite($('#f-name').value); paintThumb(); } });
 let siteT; $('#f-site').addEventListener('input', () => { siteAuto = !$('#f-site').value; clearTimeout(siteT); siteT = setTimeout(paintThumb, 500); });
@@ -668,13 +714,13 @@ $('#f-fit').addEventListener('change', () => { formFit = $('#f-fit').value; pain
 
 /* ---------- ricerca loghi ---------- */
 const WD = 'https://www.wikidata.org/w/api.php', CM = 'https://commons.wikimedia.org/w/api.php';
-let searchRun = 0;
-$('#f-logo').addEventListener('click', () => {
+let searchRun = 0, logoTarget = null;
+$('#f-logo').addEventListener('click', () => { logoTarget = null; openLogos($('#f-name').value.trim()); });
+function openLogos(q){
   openSheet('#logos');
-  const q = $('#f-name').value.trim();
   $('#l-q').value = q;
   if(q) searchLogos(q); else { $('#l-grid').innerHTML = ''; $('#l-status').textContent = 'Scrivi il nome del negozio.'; $('#l-q').focus(); }
-});
+}
 $('#l-back').addEventListener('click', goBack);
 $('#l-go').addEventListener('click', () => { const q = $('#l-q').value.trim(); if(q) searchLogos(q); });
 $('#l-q').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('#l-go').click(); } });
@@ -710,7 +756,7 @@ async function searchLogos(q){
     grid.appendChild(b);
   };
   const bf = (d, t) => 'https://cdn.brandfetch.io/domain/' + encodeURIComponent(d) + '/w/1024/h/1024/fallback/404/' + t + '?c=' + BF;
-  const bfDomain = d => { if(!d || bfSeen.has(d)) return; bfSeen.add(d); ['logo','icon','symbol'].forEach(t => add(bf(d, t), 'Brandfetch', {prio:3, hot:true})); };
+  const bfDomain = d => { if(!d || bfSeen.has(d)) return; bfSeen.add(d); ['logo','icon','symbol'].forEach(t => add(bf(d, t), 'Brandfetch · solo online', {prio:3, hot:true})); };
   const bfSeen = new Set();
   const domains = new Set();
   const site = cleanSite($('#f-site').value) || guessSite(q);
@@ -779,8 +825,13 @@ async function chooseLogo(url, opt){
   opt = opt || {};
   let data = null;
   if(!opt.hot){ toast('Salvo il logo…'); data = await logoToData(url); }
-  formLogo = data || url; formFit = 'contain'; faceImg = null;
-  pickColor((data && await edgeColor(data)) || '#FFFFFF');
+  const bg = (data && await edgeColor(data)) || '#FFFFFF';
+  if(logoTarget){
+    const c = logoTarget; logoTarget = null;
+    Object.assign(c, {logo:data || url, fit:'contain', img:null, color:bg});
+    save(); queueWidget(); refreshSlot(c);
+    const el = slotOf(c.id); if(el && el.classList.contains('fl')) renderBack(el);
+  }else{ formLogo = data || url; formFit = 'contain'; faceImg = null; pickColor(bg); }
   goBack();
   toast(opt.hot ? 'Logo Brandfetch: si vede quando c’è rete' : data ? 'Logo salvato, visibile anche offline' : 'Logo scelto (servirà la rete per vederlo)');
 }
@@ -878,7 +929,7 @@ $('#f-save').addEventListener('click', () => {
   else { added = Object.assign({id:uid(), uses:0}, data); cards.push(added); }
   if(!save()){ if(added) cards = cards.filter(x => x !== added); return; }
   dirty = true; queueWidget();
-  if(editing && shownFl && shownEx === editing.id){ refreshSlot(editing); goBack(); }
+  if(editing && shownEx === editing.id){ refreshSlot(editing); const el = slotOf(editing.id); if(el && shownFl) renderBack(el); goBack(); }
   else closeSheets();
   toast('Tessera salvata');
 });
@@ -887,7 +938,7 @@ $('#f-del').addEventListener('click', () => {
   if(!delArmed){ delArmed = true; $('#f-del').textContent = 'Tocca di nuovo per eliminare'; return; }
   const id = editing.id;
   cards = cards.filter(x => x.id !== id); save(); queueWidget();
-  if(shownEx === id){ const el = slotOf(id); if(el) flipClose(el, true); shownEx = null; shownFl = false; brightness(false); release(); }
+  if(shownEx === id){ const el = slotOf(id); if(el) el.classList.remove('fl'); shownEx = null; shownFl = false; brightness(false); release(); }
   dirty = true; closeSheets(); toast('Tessera eliminata');
 });
 
@@ -1008,27 +1059,76 @@ $('#b-import').addEventListener('click', () => {
 });
 
 /* ---------- versione e aggiornamenti ---------- */
-const APP_VERSION = '2.1';   // cambia solo questo numero a ogni aggiornamento
+const APP_VERSION = APPV;   // la versione si cambia in cima al file (APPV)
 const REPO = 'wolve666/Carrds';
-$('#ver').textContent = 'v' + APP_VERSION;
 $('#upd-cur').textContent = 'v' + APP_VERSION;
 const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number);
   for(let i = 0; i < Math.max(x.length, y.length); i++){ const d = (x[i]||0) - (y[i]||0); if(d) return d > 0; } return false; };
-async function checkUpdate(quiet){
-  if(!navigator.onLine){ if(!quiet) toast('Serve la connessione per verificare'); return; }
-  if(!quiet) toast('Verifico gli aggiornamenti…');
+/* se cambia solo la pagina dell'app scarico solo quella (circa 70 kB); se cambia la parte Android serve la nuova APK */
+const UPD = {remote:null, html:null, apk:null};
+function showVer(){
+  const v = $('#ver'); v.classList.toggle('upd', !!UPD.remote);
+  v.textContent = UPD.remote ? 'v' + APP_VERSION + ' · aggiorna' : 'v' + APP_VERSION;
+}
+async function checkUpdate(manual){
+  if(!navigator.onLine){ if(manual) toast('Serve la connessione per verificare'); return; }
+  if(manual) toast('Verifico gli aggiornamenti…');
   try{
     const r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest', {cache:'no-store'});
     if(!r.ok) throw 0;
     const j = await r.json(), v = String(j.tag_name || '').replace(/^v/, '');
     const apk = (j.assets || []).find(a => /\.apk$/i.test(a.name));
-    if(v && apk && newer(v, APP_VERSION)){
-      if(confirm('È disponibile Carrds v' + v + '. Scaricare ora la nuova versione?')) location.href = apk.browser_download_url;
-    }else if(!quiet) toast('Hai già l’ultima versione');
-  }catch(e){ if(!quiet) toast('Verifica non riuscita, riprova più tardi'); }
+    UPD.remote = null; UPD.html = null; UPD.apk = apk ? apk.browser_download_url : null;
+    if(v && newer(v, APP_VERSION)){
+      UPD.remote = v;
+      try{
+        const h = await (await fetch('https://raw.githubusercontent.com/' + REPO + '/v' + v + '/www/index.html', {cache:'no-store'})).text();
+        const hv = h.match(/var APPV = '([\d.]+)', APPN = (\d+)/) || [];
+        if(hv[1] === v && +hv[2] <= window.BUNDLEN) UPD.html = h;
+      }catch(e){}
+    }
+    showVer();
+    if(UPD.remote) updNotice(manual);
+    else if(manual) toast('Hai già l’ultima versione');
+  }catch(e){ if(manual) toast('Verifica non riuscita, riprova più tardi'); }
 }
-$('#ver').addEventListener('click', () => checkUpdate(false));
-$('#b-update').addEventListener('click', () => checkUpdate(false));
+/* avviso in basso: una volta per ogni nuova versione, tocchi Aggiorna o Dopo */
+function updNotice(force){
+  if(!UPD.remote || $('#updBar')) return;
+  if(!force){ try{ if(localStorage.getItem('carrds-updseen') === UPD.remote) return; }catch(e){} }
+  const b = document.createElement('div'); b.id = 'updBar';
+  b.innerHTML = '<span>Nuova versione ' + esc(UPD.remote) + (UPD.html ? '' : ' (nuova APK)') + '</span><button>Dopo</button><button class="go">Aggiorna</button>';
+  document.body.appendChild(b); requestAnimationFrame(() => b.classList.add('show'));
+  const hide = () => { try{ localStorage.setItem('carrds-updseen', UPD.remote); }catch(e){} b.classList.remove('show'); setTimeout(() => b.remove(), 400); };
+  b.querySelector('button').onclick = hide;
+  b.querySelector('.go').onclick = () => { hide(); applyUpdate(); };
+}
+function applyUpdate(){
+  if(UPD.html){
+    try{
+      localStorage.setItem('carrds-live', UPD.html); localStorage.setItem('carrds-livever', UPD.remote);
+      localStorage.setItem('carrds-liven', String(window.BUNDLEN)); localStorage.removeItem('carrds-liveok');
+      toast('Aggiorno…'); setTimeout(() => location.reload(), 400); return;
+    }catch(e){ try{ localStorage.removeItem('carrds-live'); }catch(_){} }
+  }
+  if(UPD.apk){ toast('Questa versione cambia anche la parte Android: scarico la nuova APK'); setTimeout(() => { location.href = UPD.apk; }, 700); }
+}
+$('#ver').addEventListener('click', () => UPD.remote ? applyUpdate() : checkUpdate(true));
+$('#b-update').addEventListener('click', () => UPD.remote ? applyUpdate() : checkUpdate(true));
+(function(){
+  // avvio riuscito: la versione scaricata in app è buona
+  setTimeout(() => { try{ if(window.__LIVE) localStorage.setItem('carrds-liveok', '1'); }catch(e){} }, 4000);
+  try{
+    const fail = localStorage.getItem('carrds-livefail');
+    if(fail){ localStorage.removeItem('carrds-livefail'); setTimeout(() => toast('La v' + fail + ' non è partita: torno alla versione installata'), 900); }
+    const last = localStorage.getItem('carrds-lastver');
+    if(last && last !== APP_VERSION) setTimeout(() => toast('Aggiornata alla versione ' + APP_VERSION), 800);
+    localStorage.setItem('carrds-lastver', APP_VERSION);
+  }catch(e){}
+})();
+showVer();
+let lastChk = Date.now();
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && Date.now() - lastChk > 10*60*1000){ lastChk = Date.now(); checkUpdate(false); } });
 
 /* ---------- widget ---------- */
 let wT; function queueWidget(){ clearTimeout(wT); wT = setTimeout(syncWidget, 400); }
@@ -1041,7 +1141,8 @@ async function widgetImage(c){
   g.beginPath(); g.moveTo(R,0); g.arcTo(W,0,W,H,R); g.arcTo(W,H,0,H,R); g.arcTo(0,H,0,0,R); g.arcTo(0,0,W,0,R); g.closePath(); g.clip();
   g.fillStyle = c.color || '#FFFFFF'; g.fillRect(0, 0, W, H);
   let pic = false;
-  const src = c.img || (c.logo && c.logo.startsWith('data:') ? c.logo : null);
+  let src = c.img || (c.logo && c.logo.startsWith('data:') ? c.logo : null);
+  if(!src){ const u = logoSrc(c); if(u && !/cdn\.brandfetch\.io/.test(u)) src = await logoToData(u); }
   const im = src ? await loadImg(src) : null;
   if(im){
     const cover = !!c.img || c.fit === 'cover';
@@ -1054,7 +1155,8 @@ async function widgetImage(c){
     let t = c.name; while(g.measureText(t).width > W*.62 && t.length > 3) t = t.slice(0, -2);
     if(t !== c.name) t = t.trim() + '…';
     const tw = g.measureText(t).width, pw = tw + 30, ph = 42, px = W - pw - 14, py = 14;
-    g.fillStyle = 'rgba(10,10,14,.62)'; g.beginPath(); g.roundRect(px, py, pw, ph, ph/2); g.fill();
+    const q = ph/2; g.fillStyle = 'rgba(10,10,14,.62)'; g.beginPath();
+    g.moveTo(px+q, py); g.arcTo(px+pw, py, px+pw, py+ph, q); g.arcTo(px+pw, py+ph, px, py+ph, q); g.arcTo(px, py+ph, px, py, q); g.arcTo(px, py, px+pw, py, q); g.closePath(); g.fill();
     g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(t, px + 15, py + ph/2 + 1);
   }else{
     g.fillStyle = textOn(c.color || '#FFFFFF'); g.font = '800 44px "Bricolage Grotesque", sans-serif'; g.textBaseline = 'alphabetic';
@@ -1092,7 +1194,7 @@ const CapApp = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App;
 if(CapApp) CapApp.addListener('backButton', () => { if(depth() > 0) history.back(); else CapApp.exitApp(); });
 
 if(CapApp) CapApp.addListener('appUrlOpen', e => openFromUrl(e && e.url));
-setTimeout(() => { migrateLogos(); checkUpdate(true); syncWidget(); }, 1500);
+setTimeout(() => { migrateLogos(); checkUpdate(false); syncWidget(); }, 1500);
 
 render();
 (async () => {

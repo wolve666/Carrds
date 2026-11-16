@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versione-2.1-D7263D" alt="Versione 2.1">
+  <img src="https://img.shields.io/badge/versione-2.3-D7263D" alt="Versione 2.3">
   <img src="https://img.shields.io/badge/Android-APK-46AAF5" alt="App Android">
   <img src="https://img.shields.io/badge/funziona-offline-2E9E5B" alt="Funziona offline">
   <img src="https://img.shields.io/badge/dati-solo%20sul%20telefono-3A3F4B" alt="Dati solo sul telefono">
@@ -50,7 +50,7 @@
 ### Portafoglio
 - Griglia a due colonne con tutte le tessere visibili subito, a scorrimento verticale.
 - **Tocchi una tessera e si allarga**: le altre scorrono giù e sotto compare il codice a barre.
-- **La tocchi di nuovo e si gira**: sul retro modifichi numero, logo, colore e stellina del widget.
+- **La tocchi di nuovo e si gira**: sul retro ci sono le cose più utili (colore, logo, stellina del widget); il resto con **Modifica tutto**.
 - Le tessere più usate salgono in cima da sole.
 - Ricerca per nome quando le tessere sono più di quattro.
 - Animazione di apertura: le tessere si impilano una sull’altra e poi si distribuiscono nella griglia.
@@ -58,7 +58,7 @@
 ### Alla cassa
 - Codice a barre grande su sfondo bianco, sempre leggibile dagli scanner anche con il tema scuro.
 - Numero della tessera mostrato in chiaro sotto il codice.
-- Schermo tenuto acceso e **luminosità al massimo** finché la tessera resta aperta.
+- Schermo tenuto acceso finché la tessera resta aperta; **luminosità al massimo** attivabile da **⋯ → Schermo**.
 
 ### Aggiunta delle tessere
 - **Scansione dal vivo** con la fotocamera.
@@ -211,20 +211,24 @@ Carrds/
 
 ## Aggiornare l’app
 
-1. Modifica i file e cambia il numero nella riga:
-   ```js
-   const APP_VERSION = '2.1';   // in www/index.html
-   ```
-2. Carica su GitHub **solo i file cambiati** (quasi sempre `www/index.html`).
-3. GitHub Actions compila l’APK e pubblica la release `v<versione>`.
-4. Sul telefono tocca la versione accanto al nome: l’app trova la nuova release e scarica l’APK.
+In cima a `www/index.html` c’è la riga:
+```js
+var APPV = '2.3', APPN = 1;
+```
+- **`APPV`** è la versione mostrata accanto al nome: si alza a **ogni** aggiornamento.
+- **`APPN`** è la versione della parte Android: si alza **solo** quando cambiano `native/`, `build.yml` o i permessi.
+
+Dopo aver caricato i file su GitHub, GitHub Actions compila l’APK e pubblica la release `v<APPV>`. Sul telefono:
+- **se `APPN` non è cambiato**, l’app scarica solo la nuova pagina (circa 70 kB) e si aggiorna da sola, senza installare nulla;
+- **se `APPN` è cambiato**, l’app scarica la nuova APK da installare.
+
+L’app controlla da sola all’avvio e propone **Aggiorna / Dopo**; si può anche toccare la versione accanto al nome. Se una versione scaricata non partisse, al riavvio successivo l’app torna da sola a quella installata.
 
 Segreti richiesti nel repository (*Settings → Secrets and variables → Actions*):
 - `KEYSTORE_B64`: la chiave di firma codificata in base64.
 - `KEYSTORE_PASS`: la password della chiave.
 
 La chiave va conservata fuori dal repository: senza, Android non accetta gli aggiornamenti sopra l’app installata.
-
 ---
 
 ## Risoluzione dei problemi
@@ -245,6 +249,8 @@ La chiave va conservata fuori dal repository: senza, Android non accetta gli agg
 
 | Versione | Novità |
 |---|---|
+| **2.3** | Aggiornamenti dentro l’app: se cambia solo la pagina non serve scaricare l’APK (questa va installata ancora come APK) |
+| **2.2** | Retro della tessera compatto, animazioni più fluide, luminosità come opzione, loghi dei siti anche nel widget, icona corretta |
 | **2.1** | Tessere che si allargano e si girano, nome sul logo, tre temi (nuovo Portafoglio), widget con stelline, luminosità al massimo, loghi HD con Brandfetch e icone dei siti |
 | **2.0** | App Android (APK) indipendente dalla rete: librerie e font inclusi, loghi salvati dentro le tessere, verifica aggiornamenti dalle release |
 | **1.5** | Tasto indietro del telefono collegato a tutte le schermate |
