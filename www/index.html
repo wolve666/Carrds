@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="it" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carrds</title>
+<meta name="theme-color" content="#FFFFFF">
+<script>try{var t=localStorage.getItem('tessere.theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<script src="lib/JsBarcode.all.min.js"></script>
+<script src="lib/qrcode.min.js"></script>
+<style>
+@font-face{font-family:'Bricolage Grotesque';src:url(lib/bricolage.woff2) format('woff2');font-weight:200 800;font-display:swap}
+:root{
+  --bg:#FFFFFF; --sheet:rgba(255,255,255,.93); --surface:#FFFFFF; --ink:#2A0A0F; --muted:#7A5A5F;
+  --red:#D7263D; --red-soft:#F7D3D8; --on-red:#FFFFFF; --halo:rgba(215,38,61,.30);
+  --pat:.075; --blob:rgba(215,38,61,.10);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --sheet:rgba(0,0,0,.92); --surface:#120608; --ink:#F6E9EB; --muted:#B88E94;
+  --red:#FF3B52; --red-soft:#3A0E15; --on-red:#FFFFFF; --halo:rgba(255,59,82,.42);
+  --pat:.11; --blob:rgba(255,59,82,.14);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font:400 1rem/1.45 'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent;transition:background-color .3s,color .3s}
+body.locked{overflow:hidden}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+
+/* sfondo */
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg svg{position:absolute;inset:0;width:100%;height:100%;color:var(--red);opacity:var(--pat)}
+.bg::before,.bg::after{content:"";position:absolute;border-radius:50%;filter:blur(60px);background:var(--blob)}
+.bg::before{width:22rem;height:22rem;left:-8rem;top:-6rem}
+.bg::after{width:26rem;height:26rem;right:-10rem;bottom:-8rem}
+
+main{position:relative;z-index:1;max-width:34rem;margin:0 auto;padding:1.25rem 1rem 3rem}
+header{display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem}
+.ver{background:transparent;cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:600;letter-spacing:0;color:var(--muted);vertical-align:middle;
+  border:1.5px solid var(--red-soft);border-radius:999px;padding:.15rem .5rem;margin-left:.2rem;position:relative;top:-.35rem}
+.checks{list-style:none;padding:0;margin:.6rem 0 0}
+.checks li{display:flex;justify-content:space-between;gap:1rem;padding:.55rem 0;border-bottom:1px solid var(--red-soft)}
+.checks b{font-weight:600}
+.ok{color:#2E9E5B}.ko{color:var(--red)}
+h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;margin:0;flex:1;line-height:1;color:var(--red)}
+.round{width:2.9rem;height:2.9rem;border-radius:50%;display:grid;place-items:center;
+  background:var(--surface);border:1.5px solid var(--red);color:var(--red);
+  box-shadow:0 0 16px var(--halo);transition:box-shadow .2s,transform .12s}
+.round:active{transform:scale(.94)}
+.round.fill{background:var(--red);color:var(--on-red);font-size:1.7rem;line-height:1}
+.round svg{width:1.3rem;height:1.3rem}
+
+#search{width:100%;padding:.8rem 1rem;border-radius:14px;border:1.5px solid var(--red);
+  background:var(--surface);color:var(--ink);font:inherit;margin-bottom:1.1rem;box-shadow:0 0 14px var(--halo)}
+#search::placeholder{color:var(--muted)}
+
+/* griglia tessere */
+.wallet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.card{appearance:none;border:0;padding:0;text-align:left;width:100%;aspect-ratio:1.586;
+  border-radius:14px;background-color:var(--c);background-size:cover;background-position:center;color:var(--t);
+  position:relative;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 6px 16px rgba(0,0,0,.18);
+  transition:transform .15s ease}
+.card:active{transform:scale(.97)}
+.card .name{position:absolute;left:.75rem;right:.75rem;bottom:.6rem;font-size:1.05rem;font-weight:800;
+  letter-spacing:-.01em;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .tail{position:absolute;top:.55rem;right:.7rem;font-size:.75rem;opacity:.8;font-variant-numeric:tabular-nums}
+.card::after{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.28)}
+.flogo{position:absolute;left:9%;top:9%;width:82%;height:82%;object-fit:contain;display:block}
+.cover .flogo{left:0;top:0;width:100%;height:100%;object-fit:cover}
+.haslogo .name,.haslogo .tail,.bigcard.haslogo span{display:none}
+.thumb{position:relative;overflow:hidden}
+.lsearch{display:flex;gap:.6rem;margin-top:.6rem}
+.lsearch input{flex:1}
+.lsearch .btn{flex:none}
+.lgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin-top:1rem}
+.ltile{aspect-ratio:1.586;border-radius:12px;border:1.5px solid var(--red-soft);background:#fff;position:relative;padding:0;overflow:hidden}
+.ltile img{position:absolute;left:10%;top:10%;width:80%;height:72%;object-fit:contain}
+.ltile span{position:absolute;left:0;right:0;bottom:0;font-size:.7rem;color:#7A5A5F;background:rgba(255,255,255,.85);padding:.1rem 0}
+.ltile:active{transform:scale(.97)}
+.card.photo .name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.card.photo::before{content:"";position:absolute;inset:auto 0 0 0;height:55%;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.card.photo .tail{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+
+.empty{grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty p{font-size:1.15rem;margin:0 0 1rem}
+
+/* fogli */
+.sheet{position:fixed;inset:0;z-index:20;background:var(--sheet);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);overflow-y:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 1rem) 1rem calc(env(safe-area-inset-bottom,0px) + 1.5rem);
+  animation:rise .2s ease-out}
+.sheet[hidden]{display:none}
+.inner{max-width:30rem;margin:0 auto}
+@keyframes rise{from{transform:translateY(24px);opacity:.3}to{transform:none;opacity:1}}
+
+.bigcard{width:100%;aspect-ratio:1.586;max-width:24rem;margin:0 auto;border-radius:18px;
+  background-color:var(--c);background-size:cover;background-position:center;color:var(--t);
+  position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 30px var(--halo)}
+.bigcard span{position:absolute;left:1.1rem;right:1.1rem;bottom:1rem;font-size:1.8rem;font-weight:800;letter-spacing:-.025em;line-height:1.05;overflow-wrap:anywhere}
+.bigcard.photo span{display:none}
+.codebox{background:#FFFFFF;color:#000;border-radius:16px;padding:1.2rem 1rem 1rem;
+  margin:-2.2rem .6rem 0;position:relative;border:1.5px solid var(--red);
+  box-shadow:0 8px 24px rgba(0,0,0,.18),0 0 22px var(--halo);text-align:center}
+.codebox svg{display:block;width:100%;height:auto}
+.codebox.qr svg{max-width:17rem;margin:0 auto}
+.num{font-size:1.35rem;letter-spacing:.06em;font-variant-numeric:tabular-nums;margin-top:.6rem;overflow-wrap:anywhere}
+.hint{color:var(--muted);font-size:.92rem;margin:.7rem 0 0}
+.codebox .hint{color:#7A5A5F}
+
+.row{display:flex;gap:.7rem;margin-top:1.2rem}
+.btn{flex:1;padding:.9rem 1rem;border-radius:14px;border:1.5px solid var(--red);
+  background:var(--surface);color:var(--red);font-weight:600;box-shadow:0 0 14px var(--halo);transition:transform .12s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--red);color:var(--on-red)}
+.btn.quiet{border-color:var(--red-soft);color:var(--muted);box-shadow:none;background:transparent}
+.btn.wide{width:100%;flex:none}
+
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
+.top h2{margin:0;font-size:1.6rem;font-weight:800;letter-spacing:-.02em;color:var(--red)}
+.x{background:transparent;border:0;color:var(--red);font-size:1.9rem;width:2.8rem;height:2.8rem;border-radius:50%}
+label,.lbl{display:block;font-weight:600;margin:1.1rem 0 .4rem}
+input[type=text],select,textarea{width:100%;padding:.85rem;border-radius:14px;border:1.5px solid var(--red-soft);
+  background:var(--surface);color:var(--ink);font:inherit}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--red);outline:none;box-shadow:0 0 14px var(--halo)}
+textarea{min-height:8rem;font-size:.85rem;resize:vertical}
+.swatches{display:flex;flex-wrap:wrap;gap:.6rem}
+.sw{width:2.4rem;height:2.4rem;border-radius:50%;border:1.5px solid var(--red-soft);background:var(--c)}
+.sw[aria-pressed="true"]{outline:3px solid var(--red);outline-offset:3px}
+.face{display:flex;gap:.8rem;align-items:center}
+.thumb{width:7rem;aspect-ratio:1.586;border-radius:10px;background:var(--c) center/cover;flex:none;border:1.5px solid var(--red-soft)}
+.face .row{flex:1;margin:0;flex-direction:column;gap:.5rem}
+#f-prev{min-height:5rem;margin:1.3rem 0 0;padding:1rem}
+
+#scan{background:#000;color:#fff}
+.viewfinder{position:relative;border-radius:16px;overflow:hidden;background:#111;aspect-ratio:3/4;max-height:65vh;margin:0 auto;border:1.5px solid #FF3B52;box-shadow:0 0 24px rgba(255,59,82,.4)}
+.viewfinder video{width:100%;height:100%;object-fit:cover;display:block}
+.viewfinder::after{content:"";position:absolute;left:8%;right:8%;top:38%;height:24%;
+  border:3px solid #FF3B52;border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+#scan-msg{text-align:center;margin:1rem 0;color:#E5D3D5}
+
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 1.2rem);transform:translate(-50%,1rem);
+  background:var(--red);color:var(--on-red);padding:.7rem 1.1rem;border-radius:999px;font-weight:600;
+  box-shadow:0 0 20px var(--halo);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:90vw;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion: reduce){.sheet{animation:none}.card,.btn,.round{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <g id="i-cart" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h2.4l2.5 11.6a1.8 1.8 0 0 0 1.8 1.4h9a1.8 1.8 0 0 0 1.8-1.4L21 7H5.4"/>
+        <circle cx="9" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/>
+      </g>
+      <g id="i-bag" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 7h14l-1 14H6L5 7z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/>
+      </g>
+      <g id="i-gift" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9"/><path d="M12 8v13"/>
+        <path d="M12 8c-1.5-3.5-5.5-4-5.5-1.6C6.5 8 9 8 12 8c3 0 5.5 0 5.5-1.6C17.5 4 13.5 4.5 12 8z"/>
+      </g>
+      <pattern id="pat" width="260" height="260" patternUnits="userSpaceOnUse">
+        <use href="#i-cart" transform="translate(24 30) rotate(-12) scale(2)"/>
+        <use href="#i-bag" transform="translate(160 60) rotate(10) scale(1.9)"/>
+        <use href="#i-gift" transform="translate(70 160) rotate(-6) scale(1.9)"/>
+        <use href="#i-cart" transform="translate(196 186) rotate(14) scale(1.4)"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#pat)"/>
+  </svg>
+</div>
+
+<main>
+  <header>
+    <h1>Carrds <button class="ver" id="ver" aria-label="Verifica aggiornamenti"></button></h1>
+    <button class="round" id="theme-btn" aria-label="Cambia tema">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+    </button>
+    <button class="round" id="menu-btn" aria-label="Backup e condivisione">
+      <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button>
+    <button class="round fill" id="add-btn" aria-label="Aggiungi tessera">+</button>
+  </header>
+  <input id="search" type="search" placeholder="Cerca negozio" aria-label="Cerca negozio" hidden>
+  <div class="wallet" id="wallet"></div>
+</main>
+
+<section class="sheet" id="detail" hidden aria-label="Tessera">
+  <div class="inner">
+    <div class="bigcard" id="d-card"><span id="d-name"></span></div>
+    <div class="codebox" id="d-box">
+      <div id="d-code"></div>
+      <div class="num" id="d-num"></div>
+    </div>
+    <p class="hint" style="text-align:center">Alza la luminosità se il lettore fa fatica.</p>
+    <div class="row">
+      <button class="btn" id="d-edit">Modifica</button>
+      <button class="btn primary" data-close>Chiudi</button>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="form" hidden aria-label="Tessera da salvare">
+  <div class="inner">
+    <div class="top"><h2 id="f-title">Nuova tessera</h2><button class="x" data-close aria-label="Chiudi">×</button></div>
+    <div class="row" style="margin-top:.6rem">
+      <button class="btn primary" id="f-scan">Inquadra il codice</button>
+      <button class="btn" id="f-photo">Codice da foto</button>
+    </div>
+    <label for="f-name">Negozio</label>
+    <input type="text" id="f-name" placeholder="Es. Coop, Esselunga, Decathlon" autocomplete="off">
+    <label for="f-site">Sito del negozio, per il logo</label>
+    <input type="text" id="f-site" placeholder="Es. coop.it" autocomplete="off" inputmode="url" autocapitalize="off" spellcheck="false">
+    <label for="f-num">Numero della tessera</label>
+    <input type="text" id="f-num" placeholder="Il numero sotto il codice a barre" autocomplete="off">
+    <label for="f-fmt">Tipo di codice</label>
+    <select id="f-fmt">
+      <option value="AUTO">Automatico</option>
+      <option value="EAN13">EAN-13</option>
+      <option value="EAN8">EAN-8</option>
+      <option value="UPC">UPC-A</option>
+      <option value="UPCE">UPC-E</option>
+      <option value="CODE128">Code 128</option>
+      <option value="CODE39">Code 39</option>
+      <option value="ITF">ITF</option>
+      <option value="codabar">Codabar</option>
+      <option value="QR">QR code</option>
+    </select>
+    <span class="lbl">Aspetto della tessera</span>
+    <div class="face">
+      <div class="thumb" id="f-thumb"></div>
+      <div class="row">
+        <button class="btn primary" id="f-logo">Cerca logo</button>
+        <button class="btn" id="f-face">Fotografa il fronte</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:.7rem">
+      <button class="btn quiet" id="f-nologo" hidden>Togli logo</button>
+      <button class="btn quiet" id="f-noface" hidden>Togli la foto</button>
+    </div>
+    <label for="f-fit" id="f-fit-l" hidden>Come mostrare il logo</label>
+    <select id="f-fit" hidden>
+      <option value="contain">Logo intero sulla tessera</option>
+      <option value="cover">Riempi tutta la tessera</option>
+    </select>
+    <span class="lbl">Colore di sfondo</span>
+    <div class="swatches" id="f-colors" style="margin-top:.7rem"></div>
+    <div class="codebox" id="f-prev"></div>
+    <div class="row"><button class="btn primary" id="f-save">Salva tessera</button></div>
+    <div class="row"><button class="btn quiet" id="f-del" hidden>Elimina tessera</button></div>
+  </div>
+</section>
+
+<section class="sheet" id="scan" hidden aria-label="Scansione">
+  <div class="inner">
+    <div class="viewfinder"><video id="video" playsinline muted></video></div>
+    <p id="scan-msg">Inquadra il codice a barre della tessera dentro il riquadro.</p>
+    <button class="btn wide" id="scan-stop">Annulla</button>
+  </div>
+</section>
+
+<section class="sheet" id="logos" hidden aria-label="Cerca logo">
+  <div class="inner">
+    <div class="top"><h2>Cerca logo</h2><button class="x" id="l-back" aria-label="Torna alla tessera">×</button></div>
+    <div class="lsearch">
+      <input type="text" id="l-q" placeholder="Nome del negozio" autocomplete="off" enterkeyhint="search">
+      <button class="btn primary" id="l-go">Cerca</button>
+    </div>
+    <p class="hint" id="l-status"></p>
+    <div class="lgrid" id="l-grid"></div>
+  </div>
+</section>
+
+<section class="sheet" id="backup" hidden aria-label="Backup">
+  <div class="inner">
+    <div class="top"><h2>Backup e app</h2><button class="x" data-close aria-label="Chiudi">×</button></div>
+    <p class="hint">Le tessere restano salvate solo su questo telefono, anche senza rete. Per passarle a un altro telefono copia il backup, mandalo in chat e incollalo qui sull’altro dispositivo.</p>
+    <div class="row"><button class="btn primary" id="b-copy">Copia backup</button></div>
+    <label for="b-text">Incolla un backup</label>
+    <textarea id="b-text" placeholder="Incolla qui il testo del backup"></textarea>
+    <div class="row"><button class="btn" id="b-import">Importa tessere</button></div>
+    <span class="lbl" style="margin-top:2rem">Aggiornamenti</span>
+    <p class="hint" id="upd-hint">Versione installata: <b id="upd-cur"></b></p>
+    <div class="row"><button class="btn primary" id="b-update">Verifica aggiornamenti</button></div>
+  </div>
+</section>
+
+<input type="file" id="photo" accept="image/*" capture="environment" hidden>
+<input type="file" id="facefile" accept="image/*" capture="environment" hidden>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const KEY = 'tessere.v1';
+const COLORS = ['#FFFFFF','#D7263D','#8E1B2B','#F26B1D','#F2C230','#2E9E5B','#13878F','#1D4ED8','#6D3FC8','#C2337A','#3A3F4B'];
+const $ = s => document.querySelector(s);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let cards = load();
+let siteAuto = true;
+let formLogo = null, formFit = 'contain';
+let current = null, editing = null, wakeLock = null, color = COLORS[1], faceImg = null, delArmed = false;
+
+function load(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : []; }catch(e){ return []; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(cards)); return true; }catch(e){ toast('Spazio pieno: togli qualche foto delle tessere'); return false; } }
+function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function textOn(hex){ const n = parseInt(hex.slice(1),16), r=n>>16, g=n>>8&255, b=n&255; return (0.299*r+0.587*g+0.114*b) > 165 ? '#1A1E26' : '#FFFFFF'; }
+function group(n){ return n.length > 6 ? n.replace(/(.{4})(?=.)/g,'$1 ') : n; }
+const CHAINS = {
+  'coop':'coop.it','esselunga':'esselunga.it','conad':'conad.it','carrefour':'carrefour.it','lidl':'lidl.it',
+  'eurospin':'eurospin.it','pam':'pampanorama.it','despar':'despar.it','interspar':'despar.it','eurospar':'despar.it',
+  'iper':'iper.it','bennet':'bennet.com','tuodì':'tuodi.it','tuodi':'tuodi.it','md':'mdspa.it','penny':'penny.it',
+  'aldi':'aldi.it','famila':'famila.it','todis':'todis.it','sigma':'supersigma.com','crai':'crai-supermercati.it',
+  'decathlon':'decathlon.it','ikea':'ikea.com','mediaworld':'mediaworld.it','unieuro':'unieuro.it','euronics':'euronics.it',
+  'trony':'trony.it','feltrinelli':'lafeltrinelli.it','mondadori':'mondadoristore.it','sephora':'sephora.it',
+  'douglas':'douglas.it','tigotà':'tigota.it','tigota':'tigota.it','acqua & sapone':'acquaesapone.it','acqua e sapone':'acquaesapone.it',
+  'leroy merlin':'leroymerlin.it','obi':'obi-italia.it','bricocenter':'bricocenter.it','brico io':'bricoio.it',
+  'zara':'zara.com','h&m':'hm.com','ovs':'ovs.it','coin':'coin.it','upim':'upim.it','kiko':'kikocosmetics.com',
+  'goldenpoint':'goldenpoint.com','arcaplanet':'arcaplanet.it','maxi zoo':'maxizoo.it','gamestop':'gamestop.it',
+  'pittarello':'pittarello.com','calzedonia':'calzedonia.com','intimissimi':'intimissimi.com','tezenis':'tezenis.com',
+  'yves rocher':'yves-rocher.it','primark':'primark.com','risparmio casa':'risparmiocasa.com','eataly':'eataly.net',
+  'autogrill':'autogrill.it','ip':'gruppoapi.com','q8':'q8.it','eni':'enilive.it','esso':'esso.it'
+};
+function guessSite(name){
+  const n = name.trim().toLowerCase(); if(!n) return '';
+  if(CHAINS[n]) return CHAINS[n];
+  const keys = Object.keys(CHAINS).sort((a,b) => b.length - a.length);
+  for(const k of keys){ if(k.length > 2 && new RegExp('(^|\\s)'+k.replace(/[.*+?^${}()|[\]\\&]/g,'\\$&')+'(\\s|$)').test(n)) return CHAINS[k]; }
+  return '';
+}
+function cleanSite(v){ return v.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split(/[\/?#]/)[0]; }
+function logoSrc(c){
+  if(c.img) return '';
+  if(c.logo) return c.logo;
+  if(c.site) return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(c.site) + '&sz=256';
+  return '';
+}
+function faceTag(c){ const s = logoSrc(c); return s ? '<img class="flogo" src="'+esc(s)+'" alt="" onerror="logoFail(this)">' : ''; }
+function faceClass(c){ return c.img ? ' photo' : (logoSrc(c) ? ' haslogo' + (c.fit === 'cover' ? ' cover' : '') : ''); }
+window.logoFail = img => { const p = img.parentNode; img.remove(); if(p) p.classList.remove('haslogo','cover'); };
+let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---------- tema ---------- */
+$('#theme-btn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try{ localStorage.setItem('tessere.theme', next); }catch(e){}
+  syncThemeColor();
+});
+
+/* ---------- elenco ---------- */
+function syncThemeColor(){ const m = document.querySelector('meta[name="theme-color"]'); if(m) m.content = document.documentElement.dataset.theme === 'dark' ? '#000000' : '#FFFFFF'; }
+syncThemeColor();
+function cardStyle(c){ return '--c:'+c.color+';--t:'+textOn(c.color)+(c.img ? ';background-image:url('+c.img+')' : ''); }
+function render(){
+  const s = $('#search'), w = $('#wallet');
+  s.hidden = cards.length < 5;
+  const q = s.value.trim().toLowerCase();
+  if(!cards.length){
+    w.innerHTML = '<div class="empty"><p>Nessuna tessera ancora.</p><button class="btn primary" data-act="add">Aggiungi la prima</button></div>';
+    return;
+  }
+  const list = cards.filter(c => !q || c.name.toLowerCase().includes(q))
+    .sort((a,b) => (b.uses||0) - (a.uses||0) || a.name.localeCompare(b.name,'it'));
+  if(!list.length){ w.innerHTML = '<p class="empty">Nessuna tessera con “' + esc(q) + '”.</p>'; return; }
+  w.innerHTML = list.map(c =>
+    '<button class="card'+faceClass(c)+'" data-id="'+c.id+'" aria-label="'+esc(c.name)+'" style="'+cardStyle(c)+'">' +
+    faceTag(c) + '<span class="tail">•••• '+esc(c.number.slice(-4))+'</span><span class="name">'+esc(c.name)+'</span></button>').join('');
+}
+
+/* animazione di apertura: le tessere si impilano una sopra l'altra, poi si dispongono in griglia */
+function dealIn(){
+  const els = [...document.querySelectorAll('.wallet .card')];
+  if(reduce || !els.length || !Element.prototype.animate) return;
+  const vh = window.innerHeight;
+  const visible = els.filter(el => el.getBoundingClientRect().top < vh);
+  const rest = els.filter(el => !visible.includes(el));
+  const wr = $('#wallet').getBoundingClientRect();
+  const cx = wr.left + wr.width/2;
+  const cy = Math.max(wr.top, 0) + Math.min(vh*0.3, 200);
+  const step = 75, drop = 280, n = visible.length;
+  const spreadStart = n*step + drop + 120;
+  visible.forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    const dx = cx - (r.left + r.width/2), dy = cy - (r.top + r.height/2) - i*3;
+    const rot = (i % 2 ? 1 : -1) * (2 + (i % 3) * 1.5);
+    const pile = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+    el.style.zIndex = 1 + i;
+    const a1 = el.animate([
+      {transform:`translate(${dx}px,${dy-60}px) rotate(${rot*2}deg) scale(1.08)`, opacity:0},
+      {transform:pile, opacity:1}
+    ], {duration:drop, delay:i*step, easing:'cubic-bezier(.3,1.3,.5,1)', fill:'both'});
+    const a2 = el.animate([{transform:pile},{transform:'none'}],
+      {duration:560, delay:spreadStart + i*55, easing:'cubic-bezier(.2,.8,.2,1)', fill:'both'});
+    a2.onfinish = () => { a1.cancel(); a2.cancel(); el.style.zIndex = ''; };
+  });
+  rest.forEach((el, i) => el.animate([{opacity:0, transform:'translateY(14px)'},{opacity:1, transform:'none'}],
+    {duration:400, delay:spreadStart + n*55 + i*30, fill:'backwards'}));
+}
+
+$('#wallet').addEventListener('click', e => {
+  const c = e.target.closest('.card'); if(c) return openCard(c.dataset.id);
+  if(e.target.closest('[data-act="add"]')) openForm();
+});
+$('#search').addEventListener('input', render);
+$('#add-btn').addEventListener('click', () => openForm());
+$('#menu-btn').addEventListener('click', () => openSheet('#backup'));
+
+/* ---------- fogli ---------- */
+/* ogni foglio aperto è un passo nella cronologia: il tasto indietro del telefono torna al foglio precedente */
+const depth = () => (history.state && history.state.depth) || 0;
+function showOnly(id){
+  document.querySelectorAll('.sheet').forEach(s => s.hidden = true);
+  if(id !== '#scan') stopScan();
+  if(id !== '#detail') release();
+  if(id){ $(id).hidden = false; document.body.classList.add('locked'); }
+  else { document.body.classList.remove('locked'); render(); }
+}
+function openSheet(id){
+  if(history.state && history.state.sheet === id) return;
+  history.pushState({sheet:id, depth:depth() + 1}, '');
+  showOnly(id); $(id).scrollTop = 0;
+}
+function goBack(){ if(depth() > 0) history.back(); else showOnly(null); }
+function closeSheets(){ const d = depth(); if(d > 0) history.go(-d); else showOnly(null); }
+addEventListener('popstate', e => showOnly(e.state && e.state.sheet || null));
+history.replaceState(null, '');
+document.addEventListener('click', e => { if(e.target.closest('[data-close]')) closeSheets(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') goBack(); });
+
+/* ---------- codici ---------- */
+function guess(v){
+  if(/^\d+$/.test(v)){ if(v.length===13) return 'EAN13'; if(v.length===8) return 'EAN8'; if(v.length===12) return 'UPC'; }
+  return 'CODE128';
+}
+function drawCode(box, value, format){
+  box.innerHTML = ''; box.classList.remove('qr');
+  if(!value) return false;
+  if(format === 'QR'){
+    if(!window.qrcode){ box.innerHTML = '<p class="hint">Generatore QR non disponibile: controlla la connessione.</p>'; return false; }
+    const q = qrcode(0,'M'); q.addData(value); q.make();
+    box.innerHTML = q.createSvgTag({cellSize:8, margin:2, scalable:true});
+    box.classList.add('qr'); return 'QR';
+  }
+  if(!window.JsBarcode){ box.innerHTML = '<p class="hint">Generatore codici non disponibile: controlla la connessione.</p>'; return false; }
+  const want = format === 'AUTO' ? guess(value) : format;
+  for(const f of [want, 'CODE128']){
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    box.innerHTML = ''; box.appendChild(svg);
+    let ok = true;
+    try{ JsBarcode(svg, value, {format:f, displayValue:false, margin:12, height:110, width:2.4, background:'#ffffff', lineColor:'#000000', valid:v => { ok = v; }}); }
+    catch(e){ ok = false; }
+    if(ok) return f;
+  }
+  box.innerHTML = '<p class="hint">Questo numero non si può disegnare come codice a barre.</p>';
+  return false;
+}
+
+/* ---------- dettaglio ---------- */
+function openCard(id){
+  const c = cards.find(x => x.id === id); if(!c) return;
+  current = c; c.uses = (c.uses||0) + 1; save();
+  const head = $('#d-card');
+  head.setAttribute('style', cardStyle(c));
+  head.className = 'bigcard' + faceClass(c);
+  head.querySelectorAll('.flogo').forEach(x => x.remove());
+  head.insertAdjacentHTML('afterbegin', faceTag(c));
+  $('#d-name').textContent = c.name;
+  drawCode($('#d-code'), c.number, c.format);
+  $('#d-box').classList.toggle('qr', c.format === 'QR');
+  $('#d-num').textContent = group(c.number);
+  openSheet('#detail'); keepAwake();
+}
+$('#d-edit').addEventListener('click', () => { release(); openForm(current); });
+async function keepAwake(){ try{ if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+function release(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
+
+/* ---------- modulo ---------- */
+$('#f-colors').innerHTML = COLORS.map(c => '<button class="sw" data-color="'+c+'" style="--c:'+c+'" aria-label="Colore '+c+'" aria-pressed="false"></button>').join('');
+$('#f-colors').addEventListener('click', e => { const b = e.target.closest('.sw'); if(b) pickColor(b.dataset.color); });
+function pickColor(c){ color = c; document.querySelectorAll('.sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.color === c)); paintThumb(); }
+function paintThumb(){
+  const t = $('#f-thumb');
+  t.style.setProperty('--c', color);
+  t.style.backgroundImage = faceImg ? 'url('+faceImg+')' : 'none';
+  const f = {img:faceImg, logo:formLogo, fit:formFit, site:cleanSite($('#f-site').value)};
+  t.className = 'thumb' + faceClass(f);
+  t.innerHTML = faceTag(f);
+  const showFit = !faceImg && !!logoSrc(f);
+  $('#f-fit').hidden = $('#f-fit-l').hidden = !showFit;
+  $('#f-fit').value = formFit;
+  $('#f-nologo').hidden = !formLogo || !!faceImg;
+  $('#f-noface').hidden = !faceImg;
+  $('#f-face').textContent = faceImg ? 'Rifai la foto' : 'Fotografa il fronte';
+}
+function cleanNum(){ return $('#f-num').value.replace(/\s+/g,''); }
+function preview(){
+  const n = cleanNum(), box = $('#f-prev');
+  if(!n){ box.innerHTML = '<p class="hint">Qui vedrai l’anteprima del codice.</p>'; box.classList.remove('qr'); return; }
+  drawCode(box, n, $('#f-fmt').value);
+}
+function openForm(c){
+  editing = c || null; delArmed = false;
+  $('#f-title').textContent = c ? 'Modifica tessera' : 'Nuova tessera';
+  $('#f-name').value = c ? c.name : '';
+  $('#f-num').value = c ? c.number : '';
+  $('#f-site').value = c ? (c.site || '') : '';
+  siteAuto = !(c && c.site);
+  $('#f-fmt').value = c ? c.format : 'AUTO';
+  faceImg = c ? (c.img || null) : null;
+  formLogo = c ? (c.logo || null) : null;
+  formFit = c ? (c.fit || 'contain') : 'contain';
+  pickColor(c ? c.color : COLORS[cards.length % COLORS.length]);
+  const del = $('#f-del'); del.hidden = !c; del.textContent = 'Elimina tessera';
+  preview(); openSheet('#form');
+}
+$('#f-num').addEventListener('input', preview);
+$('#f-name').addEventListener('input', () => { if(siteAuto){ $('#f-site').value = guessSite($('#f-name').value); paintThumb(); } });
+let siteT; $('#f-site').addEventListener('input', () => { siteAuto = !$('#f-site').value; clearTimeout(siteT); siteT = setTimeout(paintThumb, 500); });
+$('#f-fmt').addEventListener('change', preview);
+$('#f-face').addEventListener('click', () => $('#facefile').click());
+$('#f-noface').addEventListener('click', () => { faceImg = null; paintThumb(); });
+$('#f-nologo').addEventListener('click', () => { formLogo = null; paintThumb(); });
+$('#f-fit').addEventListener('change', () => { formFit = $('#f-fit').value; paintThumb(); });
+
+/* ---------- ricerca loghi ---------- */
+const WD = 'https://www.wikidata.org/w/api.php', CM = 'https://commons.wikimedia.org/w/api.php';
+let searchRun = 0;
+$('#f-logo').addEventListener('click', () => {
+  openSheet('#logos');
+  const q = $('#f-name').value.trim();
+  $('#l-q').value = q;
+  if(q) searchLogos(q); else { $('#l-grid').innerHTML = ''; $('#l-status').textContent = 'Scrivi il nome del negozio.'; $('#l-q').focus(); }
+});
+$('#l-back').addEventListener('click', goBack);
+$('#l-go').addEventListener('click', () => { const q = $('#l-q').value.trim(); if(q) searchLogos(q); });
+$('#l-q').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('#l-go').click(); } });
+
+async function searchLogos(q){
+  const run = ++searchRun, grid = $('#l-grid'), st = $('#l-status');
+  grid.innerHTML = ''; st.textContent = 'Cerco i loghi…';
+  if(!navigator.onLine){ st.textContent = 'Serve la connessione per cercare i loghi.'; return; }
+  const seen = new Set();
+  const add = (url, src) => {
+    if(!url || seen.has(url) || run !== searchRun) return;
+    seen.add(url);
+    const b = document.createElement('button');
+    b.className = 'ltile'; b.setAttribute('aria-label', 'Logo da ' + src);
+    b.innerHTML = '<img alt=""><span>' + esc(src) + '</span>';
+    const im = b.querySelector('img');
+    im.onerror = () => b.remove();
+    im.onload = () => { if(im.naturalWidth < 48) b.remove(); };
+    im.src = url;
+    b.addEventListener('click', () => chooseLogo(url));
+    grid.appendChild(b);
+  };
+  const domains = new Set();
+  const site = cleanSite($('#f-site').value) || guessSite(q);
+  if(site) domains.add(site);
+  const enc = encodeURIComponent;
+  const fileUrl = f => 'https://commons.wikimedia.org/wiki/Special:FilePath/' + enc(f.replace(/ /g,'_')) + '?width=500';
+
+  const wikidata = (async () => {
+    const j = await (await fetch(WD+'?action=wbsearchentities&search='+enc(q)+'&language=it&uselang=it&type=item&limit=6&format=json&origin=*')).json();
+    const ids = (j.search || []).map(x => x.id); if(!ids.length) return;
+    const j2 = await (await fetch(WD+'?action=wbgetentities&ids='+ids.join('|')+'&props=claims&format=json&origin=*')).json();
+    for(const id of ids){
+      const cl = (j2.entities && j2.entities[id] && j2.entities[id].claims) || {};
+      for(const p of ['P154','P8972']) (cl[p] || []).forEach(x => { const f = x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value; if(f) add(fileUrl(f), 'Wikidata'); });
+      (cl.P856 || []).slice(0,1).forEach(x => { const u = x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value; if(u) domains.add(cleanSite(u)); });
+    }
+  })();
+  const commons = (async () => {
+    const j = await (await fetch(CM+'?action=query&generator=search&gsrsearch='+enc(q+' logo')+'&gsrnamespace=6&gsrlimit=12&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*')).json();
+    const pages = Object.values((j.query && j.query.pages) || {}).sort((a,b) => (a.index||0) - (b.index||0));
+    pages.forEach(p => { const ii = p.imageinfo && p.imageinfo[0]; if(ii && (ii.thumburl || ii.url)) add(ii.thumburl || ii.url, 'Commons'); });
+  })();
+  await Promise.allSettled([wikidata, commons]);
+  if(run !== searchRun) return;
+  for(const d of domains){
+    if(!d) continue;
+    add('https://icon.horse/icon/' + d, 'Icona sito');
+    add('https://www.google.com/s2/favicons?domain=' + enc(d) + '&sz=256', 'Google');
+    add('https://' + d + '/apple-touch-icon.png', 'Sito');
+  }
+  st.textContent = 'Tocca il logo che preferisci.';
+  setTimeout(() => { if(run === searchRun && !grid.children.length) st.textContent = 'Nessun logo trovato. Prova con un altro nome, oppure scrivi il sito del negozio nella tessera.'; }, 4000);
+}
+async function chooseLogo(url){
+  toast('Salvo il logo…');
+  const data = await logoToData(url);
+  formLogo = data || url; formFit = 'contain'; faceImg = null;
+  pickColor('#FFFFFF');
+  goBack();
+  toast(data ? 'Logo salvato, visibile anche offline' : 'Logo scelto (servirà la rete per vederlo)');
+}
+/* scarica il logo una volta e lo tiene dentro la tessera come immagine */
+async function logoToData(url){
+  if(!url || url.startsWith('data:')) return url;
+  let raw = null;
+  try{
+    const H = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.CapacitorHttp;
+    if(H){
+      const r = await H.request({url, method:'GET', responseType:'blob'});
+      if(r.status >= 200 && r.status < 300 && r.data){
+        const h = r.headers || {}, ct = (h['Content-Type'] || h['content-type'] || 'image/png').split(';')[0];
+        raw = 'data:' + ct + ';base64,' + r.data;
+      }
+    }else{
+      const r = await fetch(url); if(r.ok){
+        const b = await r.blob();
+        raw = await new Promise(res => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = () => res(null); f.readAsDataURL(b); });
+      }
+    }
+  }catch(e){}
+  if(!raw) return null;
+  return await new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const m = 512, k = Math.min(1, m / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(img.width*k)); cv.height = Math.max(1, Math.round(img.height*k));
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      try{ res(cv.toDataURL('image/png')); }catch(e){ res(raw); }
+    };
+    img.onerror = () => res(null);
+    img.src = raw;
+  });
+}
+/* tessere create prima della 2.0: porta dentro i loghi ancora collegati al web */
+async function migrateLogos(){
+  if(!navigator.onLine) return;
+  let changed = false;
+  for(const c of cards){
+    if(c.logo && /^https?:/.test(c.logo)){ const d = await logoToData(c.logo); if(d){ c.logo = d; changed = true; } }
+  }
+  if(changed){ save(); render(); }
+}
+$('#facefile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if(!file) return;
+  try{ faceImg = await toCardImage(file); paintThumb(); }catch(err){ toast('Foto non leggibile, riprova'); }
+});
+function toCardImage(file){
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const W = 640, H = Math.round(W/1.586), cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const g = cv.getContext('2d'), s = Math.max(W/img.width, H/img.height);
+      const w = img.width*s, h = img.height*s;
+      g.drawImage(img, (W-w)/2, (H-h)/2, w, h);
+      URL.revokeObjectURL(url); res(cv.toDataURL('image/jpeg', .78));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(); };
+    img.src = url;
+  });
+}
+$('#f-save').addEventListener('click', () => {
+  const name = $('#f-name').value.trim(), number = cleanNum(), format = $('#f-fmt').value;
+  if(!name){ toast('Scrivi il nome del negozio'); $('#f-name').focus(); return; }
+  if(!number){ toast('Manca il numero della tessera'); $('#f-num').focus(); return; }
+  const data = {name, number, format, color, img:faceImg || null, logo:formLogo || null, fit:formFit, site:cleanSite($('#f-site').value)};
+  let added = null;
+  if(editing) Object.assign(editing, data);
+  else { added = Object.assign({id:uid(), uses:0}, data); cards.push(added); }
+  if(!save()){ if(added) cards = cards.filter(x => x !== added); return; }
+  closeSheets(); toast('Tessera salvata');
+});
+$('#f-del').addEventListener('click', () => {
+  if(!editing) return;
+  if(!delArmed){ delArmed = true; $('#f-del').textContent = 'Tocca di nuovo per eliminare'; return; }
+  cards = cards.filter(x => x.id !== editing.id); save(); closeSheets(); toast('Tessera eliminata');
+});
+
+/* ---------- scansione ---------- */
+const FMT = {ean_13:'EAN13', ean_8:'EAN8', upc_a:'UPC', upc_e:'UPCE', code_128:'CODE128', code_39:'CODE39', itf:'ITF', codabar:'codabar', qr_code:'QR'};
+let detector = null, stream = null, zreader = null, scanning = false;
+
+async function getDetector(){
+  if(detector) return detector;
+  try{
+    if('BarcodeDetector' in window){
+      const f = await BarcodeDetector.getSupportedFormats();
+      if(f && f.length){ detector = new BarcodeDetector({formats:f}); return detector; }
+    }
+  }catch(e){}
+  return null;
+}
+function loadZXing(){
+  return new Promise((res, rej) => {
+    if(window.ZXing) return res();
+    const s = document.createElement('script');
+    s.src = 'lib/zxing.min.js';
+    s.onload = () => res(); s.onerror = () => rej(new Error('zxing'));
+    document.head.appendChild(s);
+  });
+}
+function zxFmt(r){ try{ return String(ZXing.BarcodeFormat[r.getBarcodeFormat()]).toLowerCase(); }catch(e){ return ''; } }
+
+function gotCode(text, fmt){
+  if(!text) return;
+  stopScan();
+  $('#f-num').value = text;
+  $('#f-fmt').value = FMT[fmt] || 'CODE128';
+  goBack(); preview();
+  toast('Codice letto');
+  if(!$('#f-name').value) $('#f-name').focus();
+}
+
+$('#f-scan').addEventListener('click', startScan);
+async function startScan(){
+  openSheet('#scan');
+  const msg = $('#scan-msg'), video = $('#video');
+  msg.textContent = 'Inquadra il codice a barre della tessera dentro il riquadro.';
+  scanning = true;
+  const det = await getDetector();
+  try{
+    if(det){
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment', width:{ideal:1280}}});
+      video.srcObject = stream; await video.play();
+      const tick = async () => {
+        if(!scanning) return;
+        try{ const r = await det.detect(video); if(r.length) return gotCode(r[0].rawValue, r[0].format); }catch(e){}
+        setTimeout(tick, 120);
+      };
+      tick();
+    }else{
+      msg.textContent = 'Avvio il lettore…';
+      await loadZXing();
+      if(!scanning) return;
+      zreader = new ZXing.BrowserMultiFormatReader();
+      msg.textContent = 'Inquadra il codice a barre della tessera dentro il riquadro.';
+      await zreader.decodeFromConstraints({video:{facingMode:'environment'}}, video, (r) => { if(r && scanning) gotCode(r.getText(), zxFmt(r)); });
+    }
+  }catch(e){
+    scanning = false;
+    msg.textContent = 'Fotocamera non disponibile qui. Usa “Codice da foto” oppure scrivi il numero a mano.';
+  }
+}
+function stopScan(){
+  scanning = false;
+  if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if(zreader){ try{ zreader.reset(); }catch(e){} zreader = null; }
+  const v = $('#video'); if(v) v.srcObject = null;
+}
+$('#scan-stop').addEventListener('click', goBack);
+
+$('#f-photo').addEventListener('click', () => $('#photo').click());
+$('#photo').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if(!file) return;
+  toast('Leggo la foto…');
+  try{
+    const det = await getDetector();
+    if(det){
+      const bmp = await createImageBitmap(file);
+      const r = await det.detect(bmp);
+      if(r.length){ scanning = true; return gotCode(r[0].rawValue, r[0].format); }
+    }else{
+      await loadZXing();
+      const url = URL.createObjectURL(file);
+      try{ const r = await new ZXing.BrowserMultiFormatReader().decodeFromImageUrl(url); scanning = true; return gotCode(r.getText(), zxFmt(r)); }
+      finally{ URL.revokeObjectURL(url); }
+    }
+    toast('Nessun codice trovato: riprova più vicino e a fuoco');
+  }catch(err){ toast('Nessun codice trovato: riprova più vicino e a fuoco'); }
+});
+
+/* ---------- backup ---------- */
+$('#b-copy').addEventListener('click', async () => {
+  const data = JSON.stringify(cards.map(({name,number,format,color,img,site,logo,fit}) => ({name,number,format,color,img,site,logo,fit})));
+  try{ await navigator.clipboard.writeText(data); toast('Backup copiato'); }
+  catch(e){ const t = $('#b-text'); t.value = data; t.select(); toast('Testo selezionato: copialo a mano'); }
+});
+$('#b-import').addEventListener('click', () => {
+  let arr;
+  try{ arr = JSON.parse($('#b-text').value.trim()); }catch(e){ toast('Il testo incollato non è un backup valido'); return; }
+  if(!Array.isArray(arr)){ toast('Il testo incollato non è un backup valido'); return; }
+  let n = 0;
+  for(const c of arr){
+    if(!c || !c.name || !c.number) continue;
+    const num = String(c.number).replace(/\s+/g,'');
+    if(cards.some(x => x.number === num && x.name === c.name)) continue;
+    const img = typeof c.img === 'string' && c.img.startsWith('data:image/') ? c.img : null;
+    cards.push({id:uid(), name:String(c.name), number:num, format:c.format || 'AUTO', site:cleanSite(String(c.site || '')), logo:(typeof c.logo === 'string' && (c.logo.startsWith('https://') || c.logo.startsWith('data:image/'))) ? c.logo : null, fit:c.fit === 'cover' ? 'cover' : 'contain', color:/^#[0-9A-Fa-f]{6}$/.test(c.color||'') ? c.color : COLORS[0], img, uses:0});
+    n++;
+  }
+  save(); $('#b-text').value = ''; closeSheets();
+  toast(n ? (n === 1 ? 'Importata 1 tessera' : 'Importate ' + n + ' tessere') : 'Nessuna tessera nuova da importare');
+});
+
+/* ---------- versione e aggiornamenti ---------- */
+const APP_VERSION = '2.0';   // cambia solo questo numero a ogni aggiornamento
+const REPO = 'wolve666/Carrds';
+$('#ver').textContent = 'v' + APP_VERSION;
+$('#upd-cur').textContent = 'v' + APP_VERSION;
+const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number);
+  for(let i = 0; i < Math.max(x.length, y.length); i++){ const d = (x[i]||0) - (y[i]||0); if(d) return d > 0; } return false; };
+async function checkUpdate(quiet){
+  if(!navigator.onLine){ if(!quiet) toast('Serve la connessione per verificare'); return; }
+  if(!quiet) toast('Verifico gli aggiornamenti…');
+  try{
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest', {cache:'no-store'});
+    if(!r.ok) throw 0;
+    const j = await r.json(), v = String(j.tag_name || '').replace(/^v/, '');
+    const apk = (j.assets || []).find(a => /\.apk$/i.test(a.name));
+    if(v && apk && newer(v, APP_VERSION)){
+      if(confirm('È disponibile Carrds v' + v + '. Scaricare ora la nuova versione?')) location.href = apk.browser_download_url;
+    }else if(!quiet) toast('Hai già l’ultima versione');
+  }catch(e){ if(!quiet) toast('Verifica non riuscita, riprova più tardi'); }
+}
+$('#ver').addEventListener('click', () => checkUpdate(false));
+$('#b-update').addEventListener('click', () => checkUpdate(false));
+
+/* tasto indietro di Android */
+const CapApp = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App;
+if(CapApp) CapApp.addListener('backButton', () => { if(depth() > 0) history.back(); else CapApp.exitApp(); });
+
+setTimeout(() => { migrateLogos(); checkUpdate(true); }, 1500);
+
+render();
+requestAnimationFrame(dealIn);
+</script>
+</body>
+</html>
